@@ -9,14 +9,21 @@ import os
 success = load_dotenv('../frontend/.env')
 BACKEND_PORT = os.environ.get("VUE_APP_BACKEND_PORT")
 FRONTEND_PORT = os.environ.get("VUE_APP_FRONTEND_PORT")
-URL = os.environ.get("VUE_APP_URL")
+APP_URL = os.environ.get("VUE_APP_URL")
+ARANGO_PORT = os.environ.get("ARANGO_PORT")
+ARANGO_URL = os.environ.get("ARANGO_URL")
 
 if BACKEND_PORT is None:
     print("warning - could not load BACKEND_PORT env var!")
 if FRONTEND_PORT is None:
     print("warning - could not load FRONTEND_PORT env var!")
-if URL is None:
-    print("warning - could not load URL env var!")
+if APP_URL is None:
+    print("warning - could not load APP_URL env var!")
+if ARANGO_PORT is None or ARANGO_URL is None:
+    print("warning - could not load ARANGO_PORT/ARANGO_URL env var!")
+
+# extend ARANGO_URL with port number
+ARANGO_URL = f"{ARANGO_URL}:{ARANGO_PORT}"
 
 
 # add path to import queries
@@ -32,8 +39,8 @@ from queries.QueryAnalyzer import QueryAnalyzer
 
 with open('src/config.yml', 'r') as file:
     config = yaml.safe_load(file)
-    #arango_config = config['arango']
-    arango_config = config['arango_dev']
+    arango_config = config['arango']
+    #arango_config = config['arango_dev']
     web_api_key = config['web_api_key']
     graph_name = arango_config.get('graph')
 
@@ -43,7 +50,7 @@ app = FastAPI()
 origins = [
     "http://localhost",
     f"http://localhost:{FRONTEND_PORT}",
-    f"{URL}:{FRONTEND_PORT}", 
+    f"{APP_URL}:{FRONTEND_PORT}", 
     ]
 
 app.add_middleware(
@@ -58,7 +65,7 @@ app.add_middleware(
 conn = Connection(
     username=arango_config.get('username'), 
     password=arango_config.get('password'), 
-    arangoURL=arango_config.get('url')
+    arangoURL=ARANGO_URL
 )
 db = conn.databases[arango_config.get('database')]
 
