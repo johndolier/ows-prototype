@@ -29,3 +29,8 @@ class GeoparseRequest(BaseModel):
 class QueryAnalyzerRequest(BaseModel):
     query :str
 
+class NotebookExportRequest(BaseModel):
+    collection_id: str
+    limit: PositiveInt | None = None
+    location_filter: object
+    time_interval: Tuple[datetime, datetime] | None = None

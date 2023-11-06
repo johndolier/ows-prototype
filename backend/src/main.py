@@ -154,6 +154,11 @@ def get_location_from_user_query(request: GeoparseRequest) -> tuple[str, list]:
 
     return ('locations', geocoding_result)
 
+@app.post("/notebookExportRequest")
+def create_notebook_export(request: NotebookExportRequest):
+    ''' Creates a jupyter notebook for export from the parameters of the request '''
+    
+    pass
 
 def home():
     return "Hello, World!"

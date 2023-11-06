@@ -70,7 +70,6 @@ def get_geojson_from_location_filters(location_filters):
     return geojson.MultiPolygon(coordinates)
 
 def make_stac_item_query(db, graph_name, stac_collection_id, location_filters, time_interval, limit):
-    # TODO find out relevant STAC catalog to query from -> add catalog edge in KG!
     # TODO make coordinates homogenous -> one interface for all
     # TODO find better request strategy for STAC items? 
     query_params = {
@@ -129,3 +128,22 @@ def make_stac_item_query(db, graph_name, stac_collection_id, location_filters, t
         items_list.append(item_dict)
     return items_list
 
+
+def create_stac_export_notebook(db, graph_name, stac_collection_id:str, location_filters, time_interval, limit):
+    ''' 
+        Similar function as "make_stac_item_query" but generates a IPython notebook to export it 
+    '''
+    query_params = {
+        'doc_id': stac_collection_id, 
+        'graph_name': graph_name, 
+        }
+    try:
+        # get key from first (and only) element
+        stac_source = db.AQLQuery(STAC_SOURCE_QUERY, bindVars=query_params, rawResults=True)[0].get('_key', None)
+    except Exception as e:
+        print(e)
+        print(f"error - could not load stac collection node with id {stac_collection_id}")
+        return None
+    
+
+    pass
