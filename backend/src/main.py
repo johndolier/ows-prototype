@@ -6,7 +6,7 @@ from dotenv import load_dotenv, find_dotenv
 import os
 
 # NOTE: .env file is in ows_prototype/frontend folder! this relative path only works when script is launched from parent/backend directory!
-success = load_dotenv('../frontend/.env')
+load_dotenv('../frontend/.env')
 BACKEND_PORT = os.environ.get("VUE_APP_BACKEND_PORT")
 FRONTEND_PORT = os.environ.get("VUE_APP_FRONTEND_PORT")
 APP_URL = os.environ.get("VUE_APP_URL")
@@ -33,7 +33,7 @@ sys.path.append("src/")
 from queries.web_query import *
 from queries.arango_query import *
 from queries.QueryRequest import *
-from queries.stac_queries import make_stac_item_query
+from queries.stac_queries import make_stac_item_query, fetch_stac_source_information, create_stac_export_notebook
 from queries.QueryAnalyzer import QueryAnalyzer
 
 
@@ -47,7 +47,7 @@ with open('src/config.yml', 'r') as file:
 # CREATE BACKEND API 
 app = FastAPI()
 
-origins = [
+ORIGINS = [
     "http://localhost",
     f"http://localhost:{FRONTEND_PORT}",
     f"{APP_URL}:{FRONTEND_PORT}", 
@@ -55,23 +55,25 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ESTABLISH ARANGODB CONNECTION
-conn = Connection(
+CONN = Connection(
     username=arango_config.get('username'), 
     password=arango_config.get('password'), 
     arangoURL=ARANGO_URL
 )
-db = conn.databases[arango_config.get('database')]
+DB = CONN.databases[arango_config.get('database')]
 
+# fetch information for stac sources
+STAC_SOURCE_DICT = fetch_stac_source_information(db=DB)
 
 # create QueryAnalyzer class
-qa = QueryAnalyzer(geonames_username='johndolier')
+QA = QueryAnalyzer(geonames_username='johndolier')
 
 
 # DEFINE ENDPOINTS
@@ -79,7 +81,7 @@ qa = QueryAnalyzer(geonames_username='johndolier')
 @app.post("/pubRequest")
 def make_pub_request(request: PubRequest) -> tuple[str, list[dict]]:
     results = make_publications_query(
-        db=db, 
+        db=DB, 
         graph_name=graph_name, 
         query=request.query, 
         keywords=request.keywords, 
@@ -90,7 +92,7 @@ def make_pub_request(request: PubRequest) -> tuple[str, list[dict]]:
 @app.post("/stacCollectionRequest")
 def make_stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[dict]]:
     results = make_stac_collection_query(
-        db=db, 
+        db=DB, 
         graph_name=graph_name, 
         query=request.query, 
         keywords=request.keywords, 
@@ -123,24 +125,26 @@ def make_stac_item_request(request: STACItemRequest) -> tuple[str, list[dict]]:
         return response
     
     stac_items = make_stac_item_query(
-        db=db, 
+        db=DB, 
         graph_name=graph_name, 
         stac_collection_id=stac_collection_id, 
         location_filters=request.location_filters, 
         time_interval=request.time_interval, 
-        limit=request.limit)
+        limit=request.limit, 
+        stac_source_dict=STAC_SOURCE_DICT, 
+    )
 
     return ('stac_items', stac_items)
 
 @app.get("/keywordRequest")
 def get_all_keywords_request():
-    keywords = get_all_keywords(db=db)
+    keywords = get_all_keywords(db=DB)
     return keywords
 
 @app.post("/queryAnalyzerRequest")
 def analyze_user_query(request: QueryAnalyzerRequest) -> dict:
     ''' Takes the user query and extracts possible locations, time mentions and general keywords '''
-    analyzer_result = qa.analyze_query(user_query=request.query)
+    analyzer_result = QA.analyze_query(user_query=request.query)
     #print(f"locations: {analyzer_result.get('locations')}")
     #print(f"dates: {analyzer_result.get('dates')}")
     #print(f"general keywords: {analyzer_result.get('general_keywords')}")
@@ -149,7 +153,7 @@ def analyze_user_query(request: QueryAnalyzerRequest) -> dict:
 @app.post("/geoparseRequest")
 def get_location_from_user_query(request: GeoparseRequest) -> tuple[str, list]:
     ''' Extract locations and bboxes from user query if present '''
-    geocoding_result = qa.get_location_and_geobounds_list(request.query)
+    geocoding_result = QA.get_location_and_geobounds_list(request.query)
     # TODO transform data for client? 
 
     return ('locations', geocoding_result)
@@ -160,6 +164,17 @@ def create_notebook_export(request: NotebookExportRequest):
     
     pass
 
-def home():
-    return "Hello, World!"
+from datetime import datetime
 
+create_stac_export_notebook(
+    db=DB, 
+    graph_name=graph_name, 
+    stac_collection_id="gnatsgo-tables", 
+    location_filters={
+        'type': 'polygon', 
+        'coordiantes': [1, [2,3], [4], 5]
+    },
+    time_interval=datetime.now(), 
+    limit=10, 
+    stac_source_dict=STAC_SOURCE_DICT
+    )

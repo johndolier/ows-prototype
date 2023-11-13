@@ -39,3 +39,6 @@ backend/src/config.yml
 
 # do not include arangodb files
 arango_instance/
+
+run_dev_instance.sh
+launch_server.sh
