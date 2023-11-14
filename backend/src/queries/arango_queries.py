@@ -1,6 +1,15 @@
-from pyArango.connection import DBHandle
-from utils import normalize_scoring_range
-from sentence_transformers import SentenceTransformer
+
+# FILE HOSTS SEVERAL QUERY STRINGS FOR ARANGODB
+
+
+
+STAC_SOURCE_QUERY = """
+FOR stac_coll in STACCollection
+    FILTER stac_coll._key == @doc_id
+    FOR v in 1..1 INBOUND stac_coll GRAPH @graph_name
+        FILTER v._id LIKE "STACSource/%"
+        return v
+"""
 
 
 ALL_KEWORDS_QUERY = """
@@ -288,151 +297,4 @@ LET keywordCount = (
 RETURN {conceptCount: conceptCount, keywordCount: keywordCount}
 
 """
-
-
-def get_all_keywords(db: DBHandle, batchSize:int = 100) -> list[str]: 
-    try:
-        result = db.AQLQuery(ALL_KEWORDS_QUERY, batchSize=batchSize, rawResults=True)
-        result = [key for key in result] # transform query object to list of keywords
-    except Exception as e:
-        print(e)
-        result = []
-    return result
-
-def make_publications_query(db: DBHandle, graph_name:str, query:str, keywords:list[str] = None, limit:int = 500) -> list[dict]:
-    ''' 
-        Fetches Publication nodes according to query and keywords (list)
-    '''
-
-    # create query string from keywords
-    keyword_query = ''
-    for word in keywords:
-        keyword_query += f"{word} "
-    keyword_query = keyword_query.strip()
-    
-    #model = SentenceTransformer('msmarco-distilbert-base-v4')
-    #query_emb = model.encode(query).tolist()
-    query_params = {
-        'query': keyword_query,
-        #'query_embedding': query_emb,  
-        'sim_score': 0.9, 
-    }
-    try:
-        result = db.AQLQuery(SIMPLE_PUB_ARANGOSEARCH_QUERY, bindVars=query_params, rawResults=True)
-    except Exception as e:
-        print(e)
-        result = []
-    # convert iterable query to list of dicts
-    # transform dictionary
-    transformed_results = []
-    min_score = float('inf')
-    max_score = 0
-    for doc in result:
-        pub = doc.get('pub')
-        if not pub:
-            continue
-        score = doc.get('score', 0)
-        pub['score'] = score
-        if score < min_score:
-            min_score = score
-        if score > max_score:
-            max_score = score
-        pub['eo_objects'] = doc.get('eo_objects', [])
-        transformed_results.append(pub)
-
-    transformed_results = normalize_scoring_range(transformed_results, min_score, max_score)
-    return transformed_results
-
-def make_stac_collection_query(db: DBHandle, graph_name:str, query:str, keywords:list[str] = None, limit:int = 200) -> list[dict]:
-    # returns stac collections that are most likely to match query
-    # TODO automatically get connected eo missions/instruments
-
-    # create query string from keywords
-    keyword_query = ''
-    for word in keywords:
-        keyword_query += f"{word} "
-    keyword_query = keyword_query.strip()
-
-    model = SentenceTransformer('msmarco-distilbert-base-v4')
-    keyword_query_emb = model.encode(keyword_query).tolist()
-    query_params = {
-        #'query': keyword_query, 
-        'query_embedding': keyword_query_emb,  
-        #'limit': limit, 
-        'sim_threshold': 0.1, 
-    }
-    try:
-        result = db.AQLQuery(SIMPLE_STAC_EMB_QUERY, bindVars=query_params, rawResults=True)
-    except Exception as e:
-        print(e)
-        result = []
-    result = [e for e in result]
-
-    # convert iterable query to list of dicts
-    transformed_results = []
-    # normalize score
-    # TODO find better way (temporary solution)
-    min_score = float('inf')
-    max_score = 0
-    for doc in result:
-        stac = doc.get('stac')
-        if not stac:
-            continue
-        score = doc.get('score', 10)
-        stac['score'] = score
-        if score < min_score:
-            min_score = score
-        if score > max_score:
-            max_score = score
-        stac['eo_objects'] = doc.get('eo_objects', [])
-        stac['loading'] = False # quick hack for frontend 
-        stac['stac_items'] = [] # hack for frontend
-        transformed_results.append(stac)
-
-    #transformed_results = normalize_scoring_range(transformed_results, min_score, max_score)
-    return transformed_results
-
-def get_nodes_from_keyword(db: DBHandle, graph_name:str, keyword:str) -> list[str]:
-    # returns list of id's wich are connected with HasKeyword edge (either STACCollection or Publication)
-    keyword = create_key_from_keyword(keyword=keyword.lower())
-    query_params = {
-        'keyword': f'Keyword/{keyword}', 
-    }
-    try:
-        result = db.AQLQuery(NODE_FROM_KEYWORD_QUERY, bindVars=query_params, rawResults=True)
-    except Exception as e:
-        print(e)
-        result = []
-    return result
-
-def get_related_eo_connections(db: DBHandle, graph_name:str, key:str, collection:str) -> list[str]:
-    # returns list of id's of eo missions/instruments that are connected to given node (either STACCollection or publication)
-    node_id = f"{collection}/{key}"
-    query_params = {
-        'node_id': node_id, 
-    }
-    try:
-        result = db.AQLQuery(EO_OBJECTS_FROM_NODE_QUERY, bindVars=query_params, rawResults=True)
-    except Exception as e:
-        print(e)
-        result = []
-    return result
-
-
-
-### HELPER functions
-
-# note: function is copied from other project 
-# TODO link function in case of change
-def create_key_from_keyword(keyword:str) -> str:
-    # keyword argument should already be lowercase!
-    import re
-    try:
-        new_key = re.sub('[^A-Za-z0-9]+', '', keyword).strip()
-        return new_key
-    except:
-        return None
-    
-
-
 

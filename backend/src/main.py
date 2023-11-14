@@ -5,6 +5,7 @@ from pyArango.connection import Connection
 from dotenv import load_dotenv, find_dotenv
 import os
 
+
 # NOTE: .env file is in ows_prototype/frontend folder! this relative path only works when script is launched from parent/backend directory!
 success = load_dotenv('../frontend/.env')
 BACKEND_PORT = os.environ.get("VUE_APP_BACKEND_PORT")
@@ -30,11 +31,13 @@ ARANGO_URL = f"{ARANGO_URL}:{ARANGO_PORT}"
 import sys
 sys.path.append("src/")
 
-from queries.web_query import *
-from queries.arango_query import *
-from queries.QueryRequest import *
-from queries.stac_queries import make_stac_item_query
+#from queries.web_query import make_web_request
+#from queries.arango_query import *
+#from queries.stac_queries import make_stac_item_query
+from queries.Requests import *
 from queries.QueryAnalyzer import QueryAnalyzer
+from queries.DataRetriever import DataRetriever
+
 
 
 with open('src/config.yml', 'r') as file:
@@ -70,17 +73,17 @@ conn = Connection(
 db = conn.databases[arango_config.get('database')]
 
 
-# create QueryAnalyzer class
+# create QueryAnalyzer object
 qa = QueryAnalyzer(geonames_username='johndolier')
 
+# create DataRetriever object
+data_retriever = DataRetriever(web_api_key=web_api_key, db_instance=db, graph_name=graph_name)
 
 # DEFINE ENDPOINTS
 
 @app.post("/pubRequest")
-def make_pub_request(request: PubRequest) -> tuple[str, list[dict]]:
-    results = make_publications_query(
-        db=db, 
-        graph_name=graph_name, 
+def pub_request(request: PubRequest) -> tuple[str, list[dict]]:
+    results = data_retriever.make_publications_query(
         query=request.query, 
         keywords=request.keywords, 
         #limit=request.limit, 
@@ -88,25 +91,17 @@ def make_pub_request(request: PubRequest) -> tuple[str, list[dict]]:
     return ('publications', results)
 
 @app.post("/stacCollectionRequest")
-def make_stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[dict]]:
-    results = make_stac_collection_query(
-        db=db, 
-        graph_name=graph_name, 
+def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[dict]]:
+    results = data_retriever.make_stac_collection_query(
         query=request.query, 
         keywords=request.keywords, 
         #limit=request.limit, 
     )
-    
     return ('stac_collections', results)
 
 @app.post("/webRequest")
-def make_web_request(request: WebRequest) -> tuple[str, list[dict]]:
-    results = make_web_query(
-        api_key=web_api_key, 
-        query=request.query, 
-        #limit=request.limit, 
-        verbose=True,
-    )
+def web_request(request: WebRequest) -> tuple[str, list[dict]]:
+    results = data_retriever.make_web_query(query=request.query, limit=request.limit, verbose=True)
     return ('web_documents', results)
 
 @app.post("/stacItemRequest")
@@ -115,6 +110,7 @@ def make_stac_item_request(request: STACItemRequest) -> tuple[str, list[dict]]:
     # split collection id string to retrieve collection
     response = ('stac_collections', [])
     try:
+        # omit first part of string (STACCollection/)
         stac_collection_id = request.collection_id.split('/')[1]
     except Exception as e:
         # invalid format!
@@ -122,9 +118,7 @@ def make_stac_item_request(request: STACItemRequest) -> tuple[str, list[dict]]:
         print(e)
         return response
     
-    stac_items = make_stac_item_query(
-        db=db, 
-        graph_name=graph_name, 
+    stac_items = data_retriever.make_stac_item_query(
         stac_collection_id=stac_collection_id, 
         location_filters=request.location_filters, 
         time_interval=request.time_interval, 
@@ -134,7 +128,7 @@ def make_stac_item_request(request: STACItemRequest) -> tuple[str, list[dict]]:
 
 @app.get("/keywordRequest")
 def get_all_keywords_request():
-    keywords = get_all_keywords(db=db)
+    keywords = data_retriever.get_all_keywords()
     return keywords
 
 @app.post("/queryAnalyzerRequest")
@@ -153,8 +147,4 @@ def get_location_from_user_query(request: GeoparseRequest) -> tuple[str, list]:
     # TODO transform data for client? 
 
     return ('locations', geocoding_result)
-
-
-def home():
-    return "Hello, World!"
 
