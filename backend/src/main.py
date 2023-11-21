@@ -43,6 +43,7 @@ with open('src/config.yml', 'r') as file:
     #arango_config = config['arango_dev']
     web_api_key = config['web_api_key']
     graph_name = arango_config.get('graph')
+    geonames_username = config['geonames_username']
 
 # CREATE BACKEND API 
 app = FastAPI()
@@ -71,7 +72,7 @@ db = conn.databases[arango_config.get('database')]
 
 
 # create QueryAnalyzer class
-qa = QueryAnalyzer(geonames_username='johndolier')
+qa = QueryAnalyzer(geonames_username=geonames_username)
 
 
 # DEFINE ENDPOINTS
