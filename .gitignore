@@ -39,3 +39,7 @@ backend/src/config.yml
 
 # do not include arangodb files
 arango_instance/
+
+
+# ignore scripts
+*.sh
