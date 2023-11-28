@@ -6,7 +6,6 @@ node_modules
 package-lock.json
 
 
-
 # local env files
 .env.local
 .env.*.local
@@ -37,9 +36,12 @@ backend/src/test.py
 backend/src/config.yml
 
 
-# do not include arangodb files
-arango_instance/
-
+# do not include arangodb files (have to be fetched externally)
+arangodump/
+arangodb/
 
 # ignore scripts
 *.sh
+
+# ignore code archive
+archive/

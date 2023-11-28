@@ -67,7 +67,7 @@ app.use(ConfirmationService);
 
 axios.defaults.withCredentials = true;
 // FastAPI backend
-const BACKEND_URL = process.env.VUE_APP_URL + ":" + process.env.VUE_APP_BACKEND_PORT + "/"
+const BACKEND_URL = "http://localhost:5000/"
 axios.defaults.baseURL = BACKEND_URL; 
 app.use(router);
 

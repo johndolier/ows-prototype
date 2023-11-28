@@ -1,29 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import yaml
-from pyArango.connection import Connection
-from dotenv import load_dotenv, find_dotenv
-import os
-
-# NOTE: .env file is in ows_prototype/frontend folder! this relative path only works when script is launched from parent/backend directory!
-success = load_dotenv('../frontend/.env')
-BACKEND_PORT = os.environ.get("VUE_APP_BACKEND_PORT")
-FRONTEND_PORT = os.environ.get("VUE_APP_FRONTEND_PORT")
-APP_URL = os.environ.get("VUE_APP_URL")
-ARANGO_PORT = os.environ.get("ARANGO_PORT")
-ARANGO_URL = os.environ.get("ARANGO_URL")
-
-if BACKEND_PORT is None:
-    print("warning - could not load BACKEND_PORT env var!")
-if FRONTEND_PORT is None:
-    print("warning - could not load FRONTEND_PORT env var!")
-if APP_URL is None:
-    print("warning - could not load APP_URL env var!")
-if ARANGO_PORT is None or ARANGO_URL is None:
-    print("warning - could not load ARANGO_PORT/ARANGO_URL env var!")
-
-# extend ARANGO_URL with port number
-ARANGO_URL = f"{ARANGO_URL}:{ARANGO_PORT}"
 
 
 # add path to import queries
@@ -35,24 +12,54 @@ from queries.arango_query import *
 from queries.QueryRequest import *
 from queries.stac_queries import make_stac_item_query
 from queries.QueryAnalyzer import QueryAnalyzer
+from database.Database import init_db, get_connection
 
 
+# LOAD CONFIG
 with open('src/config.yml', 'r') as file:
     config = yaml.safe_load(file)
     arango_config = config['arango']
-    #arango_config = config['arango_dev']
+    frontend_config = config['frontend']
+
     web_api_key = config['web_api_key']
-    graph_name = arango_config.get('graph')
     geonames_username = config['geonames_username']
+
+    arango_username = arango_config.get('username')
+    arango_password = arango_config.get('password')
+    arango_url = arango_config.get('hostURL')
+    db_name = arango_config.get('database')
+    graph_name = arango_config.get('graph')
+    data_path = arango_config.get('data_path')
+
+    frontend_url = frontend_config.get('hostURL')
+
+
+
+# ESTABLISH ARANGODB CONNECTION
+conn = get_connection(username=arango_username, password=arango_password, arangoURL=arango_url)
+if conn is None:
+    print(f"ERROR - COULD NOT ESTABLISH ARANGODB CONNECTION!")
+    print(f"SHUTTING DOWN BACKEND SERVICE NOW")
+    sys.exit()
+
+# INIT DATABASE IF IT DOES NOT EXIST
+if db_name not in conn.databases:
+    conn.createDatabase(name=db_name)
+    db = conn.databases[db_name]
+    init_db(hostURL=arango_url, username=arango_username, password=arango_password, db_name=db_name, graph_name=graph_name, data_path=data_path)
+else:
+    db = conn.databases[db_name]
 
 # CREATE BACKEND API 
 app = FastAPI()
 
+
+# TODO: check if this is the correct way to do this
 origins = [
     "http://localhost",
-    f"http://localhost:{FRONTEND_PORT}",
-    f"{APP_URL}:{FRONTEND_PORT}", 
-    ]
+    frontend_url, 
+    "http://localhost:8080", 
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,13 +69,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ESTABLISH ARANGODB CONNECTION
-conn = Connection(
-    username=arango_config.get('username'), 
-    password=arango_config.get('password'), 
-    arangoURL=ARANGO_URL
-)
-db = conn.databases[arango_config.get('database')]
 
 
 # create QueryAnalyzer class

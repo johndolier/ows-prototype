@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+
+  arangodb:
+    container_name: arangodb-container
+    image: arangodb:latest
+    environment:
+      - ARANGO_ROOT_PASSWORD: root
+    ports:
+      - 6439:8529
+    volumes:
+      - arangodb-vol:/var/lib/arangodb3
+    networks:
+      - ows-network
+
+  backend:
+    container_name: backend-container
+    build: ./backend
+    image: backend-image
+    ports:
+      - 5000:5000
+    #volumes:
+    #  - ./backend:/app
+    networks:
+      - ows-network
+    depends_on:
+      - arangodb
+    #command: uvicorn src.main:app --reload --host 0.0.0.0 --port 5000
+
+  frontend:
+    container_name: frontend-container
+    build: ./frontend
+    image: frontend-image
+    #volumes:
+    #  - './frontend:/app'
+    #  - '/app/node_modules'
+    ports:
+      - 8080:8080
+    networks:
+      - ows-network
+    depends_on:
+      - backend
+      - arangodb
+
+volumes:
+  arangodb-vol:
+    external: false
+
+
+networks:
+  ows-network:
+    external: false
+  

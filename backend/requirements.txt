@@ -1,5 +1,13 @@
 fastapi==0.103.1
 uvicorn==0.23.2
-spacy==3.7.1
+spacy==3.7.2
 parsedatetime==2.6
-
+pyarango==2.0.2
+pystac-client==0.7.5
+planetary-computer==1.0.0
+geojson==3.1.0
+geocoder==1.38.1
+pyyaml==6.0.1
+sentence-transformers==2.2.2
+python-arango==7.8.1
+cag==1.5.17
