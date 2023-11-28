@@ -10,9 +10,9 @@ Docker ( >= 3.0)
 - Move data and config files into the correct directories (see below)
 - (Optional) Set the ports (see below)
 - Start Docker
-- Run <code> docker compose up </code>
+- Run <code>docker compose up </code>
 
-The frontend will be available at <code> localhost:8080 </code>. 
+The frontend will be available at <code>localhost:8080</code>. 
 
 *Note: When starting the service for the first time, the ArangoDB database gets initialized with all files, which can take a few minutes. If everything works correctly, next time you start the service, ArangoDB is already initialized by using the docker volume (arangodb-vol).*
 

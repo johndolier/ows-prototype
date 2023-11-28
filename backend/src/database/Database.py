@@ -31,7 +31,7 @@ def get_connection(username:str, password:str, arangoURL:str):
                 return None
             
             print(f"Go to sleep and try again tomorrow...")
-            time.sleep(3)
+            time.sleep(5)
             print(f"Trying again to establish connection... (try {i+1})")
 
 

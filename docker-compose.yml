@@ -6,7 +6,7 @@ services:
     container_name: arangodb-container
     image: arangodb:latest
     environment:
-      - ARANGO_ROOT_PASSWORD: root
+      ARANGO_ROOT_PASSWORD: root
     ports:
       - 6439:8529
     volumes:
