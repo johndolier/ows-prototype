@@ -21,11 +21,10 @@ The docker compose command builds 3 containers which are connected with a Docker
 
 For example, by default, ArangoDB listens to port 8529. Therefore, any container that is connected to *ows-network* can access the ArangoDB service with **http://arango-container:8529**. 
 
-
-For debugging reasons, some of the ports are also exposed in the host network. 
-- **http://localhost:6439** (ArangoDB server)
+These are the default ports: 
 - **http://localhost:5000** (Backend API)
 - **http://localhost:8080** (Frontend Web server)
+
 
 If for some reason you want to change some of the ports, you can do this in the *docker-compose.yml* file. Please adapt *backend/src/config.yml* as well as the variable **BACKEND_URL** in *frontend/src/main.js* accordingly. 
 
