@@ -22,7 +22,7 @@
             </div>
             <div v-else-if="slotProps.data[0] == 'stac_collection'">
               <STACCollectionComponent :content="slotProps.data[1]" :stacItems="stacItems"
-                @submitStacItemQuery="submitStacItemQueryHandler" 
+                @submitStacItemQuery="submitStacItemQueryHandler" @downloadSTACNotebook="downloadSTACNotebookHandler"
                 class="element_card">
               </STACCollectionComponent>
             </div>
@@ -117,7 +117,10 @@ export default {
     }, 
     submitStacItemQueryHandler(args) {
       this.$emit('submitStacItemQuery', args);
-    }
+    }, 
+    downloadSTACNotebookHandler(args) {
+      this.$emit('downloadSTACNotebook', args);
+    }, 
   }, 
 }
 

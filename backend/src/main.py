@@ -1,6 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import yaml
+from pyArango.connection import Connection
+from dotenv import load_dotenv
+import os
+from starlette.background import BackgroundTask
 
 
 # add path to import queries
@@ -10,9 +15,12 @@ sys.path.append("src/")
 from queries.web_query import *
 from queries.arango_query import *
 from queries.QueryRequest import *
-from queries.stac_queries import make_stac_item_query
+from queries.stac_queries import make_stac_item_query, fetch_stac_source_information, create_stac_export_notebook
 from queries.QueryAnalyzer import QueryAnalyzer
 from database.Database import init_db, get_connection
+
+from utils import get_stac_collection_from_id
+
 
 
 # LOAD CONFIG
@@ -70,6 +78,8 @@ app.add_middleware(
 )
 
 
+# fetch information for stac sources
+STAC_SOURCE_DICT = fetch_stac_source_information(db=db)
 
 # create QueryAnalyzer class
 qa = QueryAnalyzer(geonames_username=geonames_username)
@@ -110,29 +120,6 @@ def make_web_request(request: WebRequest) -> tuple[str, list[dict]]:
     )
     return ('web_documents', results)
 
-@app.post("/stacItemRequest")
-def make_stac_item_request(request: STACItemRequest) -> tuple[str, list[dict]]:
-    # TODO adapt function for locationFilters
-    # split collection id string to retrieve collection
-    response = ('stac_collections', [])
-    try:
-        stac_collection_id = request.collection_id.split('/')[1]
-    except Exception as e:
-        # invalid format!
-        print(f"failed to process stac item request for request {request}")
-        print(e)
-        return response
-    
-    stac_items = make_stac_item_query(
-        db=db, 
-        graph_name=graph_name, 
-        stac_collection_id=stac_collection_id, 
-        location_filters=request.location_filters, 
-        time_interval=request.time_interval, 
-        limit=request.limit)
-
-    return ('stac_items', stac_items)
-
 @app.get("/keywordRequest")
 def get_all_keywords_request():
     keywords = get_all_keywords(db=db)
@@ -155,7 +142,54 @@ def get_location_from_user_query(request: GeoparseRequest) -> tuple[str, list]:
 
     return ('locations', geocoding_result)
 
+@app.post("/stacItemRequest", status_code=200)
+def make_stac_item_request(request: STACItemRequest, response: Response) -> tuple[str, list[dict]]:
+    '''
+        Makes a STAC request to retrieve items for the requested STAC collection (given location and time constraints)
+    '''
+    stac_collection_id = get_stac_collection_from_id(request.collection_id)
+    if stac_collection_id is None:
+        response.status_code = 400
+        return None
+    
+    stac_items = make_stac_item_query(
+        db=db, 
+        graph_name=graph_name, 
+        stac_collection_id=stac_collection_id, 
+        location_filters=request.location_filters, 
+        time_interval=request.time_interval, 
+        limit=request.limit, 
+        stac_source_dict=STAC_SOURCE_DICT, 
+    )
 
-def home():
-    return "Hello, World!"
+    return ('stac_items', stac_items)
 
+@app.post("/notebookExportRequest", status_code=200)
+def create_notebook_export(request: NotebookExportRequest, response: Response):
+    ''' 
+        Creates a jupyter notebook for export from the parameters of the request 
+    '''
+    stac_collection_id = get_stac_collection_from_id(request.collection_id)
+    if stac_collection_id is None:
+        response.status_code = 400
+        return None
+    
+    filepath = create_stac_export_notebook(
+        db=db, 
+        graph_name=graph_name, 
+        stac_collection_id=stac_collection_id, 
+        location_filters=request.location_filters,
+        time_interval=request.time_interval, 
+        stac_source_dict=STAC_SOURCE_DICT, 
+    )
+    if filepath is None:
+        print(f"something went wrong.. could not create python notebook for STAC download...")
+        return None
+
+    return FileResponse(filepath, media_type="ipynb", background=BackgroundTask(cleanup, filepath))
+
+
+# HELPER FUNCTIONS
+def cleanup(filepath):
+    # remove file after sending response to client
+    os.remove(filepath)

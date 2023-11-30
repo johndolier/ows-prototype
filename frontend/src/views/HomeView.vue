@@ -27,7 +27,7 @@
       </div>
       <div class="advanced-search-element">
         <p align="left" class="advanced-search-header">Time Filter</p>
-        <VueDatePicker v-model="timeRangeFilter" range class="advanced-search-body"/>
+        <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
       </div>
     </PSidebar>
     <div id="SearchHeader" class="w-full relative z-3 pt-2 my-1">
@@ -65,7 +65,7 @@
         <DocumentListComponent v-if="[1,3].includes(viewMode)"
           :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
           :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="permanentData.stac_collections" 
-          @submitStacItemQuery="submitStacItemQuery"
+          @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
           class="document-list-component">
         </DocumentListComponent>
         <MapComponent v-if="[2,3].includes(viewMode)"
@@ -226,15 +226,6 @@ export default {
       }
       return false;
     }, 
-    timeRangeValid() {
-      // timeRangeSelected is only true if two timestamps are provided
-      if (this.timeRangeFilter.length == 2) {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }, 
   }, 
 
   methods: {
@@ -370,6 +361,25 @@ export default {
       this.viewSelected = ["Map", "List"];
     }, 
   
+    // BACKEND QUERY HELPER METHODS
+    getLocationFilterList() {
+      // return a list of current location filters
+      let locationFilters = [];
+      for (const filter_obj of this.locationFilterList) {
+        // extract geographical information for stac item request
+        locationFilters.push(filter_obj.geoBounds);
+      }
+      return locationFilters;
+    }, 
+    getTimeFilterList() {
+      // return a list of current time filters
+      if (this.timeRangeFilter.length == null) {
+        return [];
+      }
+      // copy array
+      return [this.timeRangeFilter[0], this.timeRangeFilter[1]];
+    }, 
+
     // BACKEND QUERY METHODS
     async submitQuery() {
       //console.log("starting to submit query");
@@ -453,21 +463,23 @@ export default {
         this.$toast.add({
           severity: 'warn', 
           summary: 'Select location', 
-          detail: 'Please specify location for STAC item query', 
+          detail: 'Please specify location for STAC request!', 
           life: 4000, 
           group: 'tc'
         });
         this.showAdvancedSearch = true;
         return false;
       }
-      if (!this.timeRangeValid) {
-        // TODO allow STAC query without specific time range? 
+      if (this.timeRangeFilter.length == 0) {
+        // timeRange is not complete: ask user whether to continue
         const parent = this; // used to access 'this' in callback function
         this.$confirm.require({
           message: "No time range selected - Do you want to proceed?", 
           header: "Confirmation", 
           icon: "pi pi-exclamation-triangle", 
           accept: function() {
+            // clear time range 
+            parent.timeRangeFilter = [];
             parent.continueStackItemQuery(stacCollectionId);
           }, 
           reject: function() {
@@ -489,16 +501,8 @@ export default {
 
     async continueStackItemQuery(stacCollectionId) {
       // TODO check if entry is already present
-      // copy locationFilterList for request body
-      let locationFilters = [];
-      for (const filter_obj of this.locationFilterList) {
-        // extract geographical information for stac item request
-        locationFilters.push(filter_obj.geoBounds);
-      }
-      let requestTimeFilter = null;
-      if (this.timeRangeValid) {
-        requestTimeFilter = [this.timeRangeFilter[0], this.timeRangeFilter[1]]; // copy array
-      }
+      let locationFilters = this.getLocationFilterList();
+      let requestTimeFilter = this.getTimeFilterList();
 
       // set loading True and selected False for all other entries
       if (!(stacCollectionId in this.permanentData.stac_collections)) {
@@ -545,6 +549,30 @@ export default {
       this.continueStackItemQuery(stacCollectionId);
     }, 
 
+    async downloadSTACNotebook(stacCollectionId) {
+      let locationFilters = this.getLocationFilterList();
+      let requestTimeFilter = this.getTimeFilterList();
+      let response = [];
+      try {
+        response = await this.requestSTACNotebook(stacCollectionId, locationFilters, requestTimeFilter);
+        // create blob file and trigger automatic download
+        const blob = new Blob([response.data]);
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "STAC_Download_Notebook.ipynb";
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+      catch (err) {
+        console.log(err);
+        alert("Something went wrong");
+        response = [];
+      }
+      finally {
+        console.log("STAC Notebook request finished!");
+      }
+    }, 
+
     async requestPublications() {
       const path = '/pubRequest'
       const request = {
@@ -580,6 +608,17 @@ export default {
         'time_interval': timeInterval
       };
       return axios.post(path, request);
+    }, 
+    async requestSTACNotebook(stacCollectionId, locationFilters, timeInterval) {
+      const path = '/notebookExportRequest';
+      const request = {
+        'collection_id': stacCollectionId, 
+        'location_filters': locationFilters, 
+        'time_interval': timeInterval
+      }; 
+      return axios.post(path, request, {
+        responseType: 'arraybuffer'
+      });
     }, 
     async analyzeQueryRequest() {
       const path = '/queryAnalyzerRequest';
