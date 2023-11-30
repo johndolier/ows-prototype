@@ -6,7 +6,6 @@ node_modules
 package-lock.json
 
 
-
 # local env files
 .env.local
 .env.*.local
@@ -31,14 +30,22 @@ frontend/pnpm-debug.log*
 # do not include mock data
 frontend/mock_data
 
+backend/src/database
+
 backend/data
 backend/src/test*
 backend/src/test.py
 backend/src/config.yml
 
+# ignore ipynb checkpoints
+*.ipynb_checkpoints
 
-# do not include arangodb files
-arango_instance/
+# do not include arangodb files (have to be fetched externally)
+arangodump/
+arangodb/
 
-run_dev_instance.sh
-launch_server.sh
+# ignore scripts
+*.sh
+
+# ignore code archive
+archive/
