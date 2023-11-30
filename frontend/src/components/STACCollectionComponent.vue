@@ -23,7 +23,10 @@
         <PButton 
           label="Request STAC items" @click="submitStacItemQuery" size="small" severity="danger"
           :loading="stacItemsLoading"
-          class="my-2">
+          class="m-2">
+        </PButton>
+        <PButton
+          label="STAC Download Notebook" @click="downloadSTACNotebook" size="small" severity="help" class="m-2 ">
         </PButton>
         <img class="thumbnail-img" 
           :src="content.assets.thumbnail.href"
@@ -71,6 +74,8 @@ export default {
     content: Object, 
     stacItems: Object, 
   }, 
+  emits: ['submitStacItemQuery', 'downloadSTACNotebook'], 
+
   data() {
     return {
       showItems: false,
@@ -129,6 +134,9 @@ export default {
     }, 
     showItemsClick() {
       this.showItems = !this.showItems;
+    }, 
+    downloadSTACNotebook() {
+      this.$emit('downloadSTACNotebook', this.content._id);
     }, 
   }, 
 }

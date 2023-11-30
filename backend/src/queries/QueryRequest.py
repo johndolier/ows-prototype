@@ -21,7 +21,7 @@ class STACItemRequest(BaseModel):
     collection_id: str
     limit: PositiveInt
     location_filters: List[object] | None = None
-    time_interval: Tuple[datetime, datetime] | None = None
+    time_interval: List[object]
 
 class GeoparseRequest(BaseModel):
     query: str
@@ -31,6 +31,5 @@ class QueryAnalyzerRequest(BaseModel):
 
 class NotebookExportRequest(BaseModel):
     collection_id: str
-    limit: PositiveInt | None = None
-    location_filter: object
-    time_interval: Tuple[datetime, datetime] | None = None
+    location_filters: List[object] | None = None
+    time_interval: List[object]

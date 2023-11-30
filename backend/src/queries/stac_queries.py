@@ -51,7 +51,9 @@ def get_stac_source(stac_collection_id:str, graph_name:str, db) -> str:
     }
     try:
         # get key from first (and only) element
-        return db.AQLQuery(STAC_SOURCE_QUERY, bindVars=query_params, rawResults=True)[0].get('_key', None)
+        response = db.AQLQuery(STAC_SOURCE_QUERY, bindVars=query_params, rawResults=True)
+        #print(response)
+        return response[0].get('_key', None)
     except Exception as e:
         print(e)
         print(f"error - could not load stac collection node with id {stac_collection_id}")
@@ -61,6 +63,9 @@ def get_stac_source(stac_collection_id:str, graph_name:str, db) -> str:
 
 def get_geojson_from_location_filters(location_filters):
     ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
+    if location_filters is None:
+        # no location filters provided
+        return None
     # for now, only bounding boxes are supported!
     if len(location_filters) == 1:
         # only one filter provided
@@ -89,24 +94,49 @@ def get_geojson_from_location_filters(location_filters):
     
     return geojson.MultiPolygon(coordinates)
 
+def get_time_interval(time_interval:list, to_string:bool=False):
+    STR_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+    print(time_interval)
+    if time_interval is None:
+        return None
+    if not isinstance(time_interval, list):
+        return None
+    if len(time_interval) != 2:
+        return None
+    if None in time_interval:
+        # at least one value is None
+        return None
+    if to_string:
+        # convert datetime arguments to string
+        #time_start_str = time_interval[0].strftime(STR_FORMAT)
+        #time_end_str = time_interval[1].strftime(STR_FORMAT)
+        #time_interval = [time_start_str, time_end_str]
+        pass
+    return time_interval
+
+
 def make_stac_item_query(db, graph_name:str, stac_collection_id:str, location_filters, time_interval, limit, stac_source_dict):
     '''
         Retrieve STAC items for the given stac collection, location, time and further parameters
     '''
 
     stac_source = get_stac_source(stac_collection_id=stac_collection_id, graph_name=graph_name, db=db)
-    api_link = stac_source_dict[stac_source]
+    api_link = stac_source_dict[stac_source]['api_link']
+    #print(api_link, stac_source)
     catalog = get_catalog(api_link, stac_source)
-
-    items_list = []
-    geojson_polygon = get_geojson_from_location_filters(location_filters)
+    location_filters = get_geojson_from_location_filters(location_filters)
+    time_interval = get_time_interval(time_interval, to_string=False)
+    print("before search....")
+    print(location_filters)
+    print(time_interval)
     search_items = catalog.search(
         max_items = limit, 
         collections = stac_collection_id, 
-        intersects = geojson_polygon, 
+        intersects = location_filters, 
         datetime = time_interval, 
     )
     search_items = list(search_items.items())
+    items_list = []
     # found items in planetary computer
     for item in search_items:
         item_api_str = f"{api_link}/collections/{stac_collection_id}/items/{item.id}"
@@ -131,38 +161,62 @@ def make_stac_item_query(db, graph_name:str, stac_collection_id:str, location_fi
     return items_list
 
 
-def create_stac_export_notebook(db, graph_name:str, stac_collection_id:str, location_filters, time_interval:list, limit:int, stac_source_dict:dict):
+def create_stac_export_notebook(db, graph_name:str, stac_collection_id:str, location_filters, time_interval, stac_source_dict:dict):
     ''' 
         Similar function as "make_stac_item_query" but generates a IPython notebook to export it 
     '''
     stac_source = get_stac_source(stac_collection_id=stac_collection_id, graph_name=graph_name, db=db)
+    print(stac_source)
     api_link = stac_source_dict[stac_source]['api_link']
-    #geojson_polygon = get_geojson_from_location_filters(location_filters)
-    geojson_polygon = location_filters
 
-    # prepare time interval
-    if len(time_interval==1):
-        pass
-    elif len(time_interval==2):
-        pass
+    # prepare location filters
+    location_filters = get_geojson_from_location_filters(location_filters)
+    coordinates = location_filters['coordinates']
+    time_interval = get_time_interval(time_interval, to_string=True)
+    print("------------")
+    print(stac_source)
+    print(api_link)
+    print(location_filters)
+    print(time_interval)
+    
+    # TODO create python notebook 
+    template_notebook = nbf.read('assets/STAC_notebook_template.ipynb', as_version=4)
+    
+    parse_block = 5
+    argument_source_code = template_notebook['cells'][parse_block]['source']
+    
+    # modify source code
+    argument_source_code = argument_source_code.replace('<<api_link>>', str(api_link))
+    argument_source_code = argument_source_code.replace('<<coordinates>>', str(coordinates))
+    argument_source_code = argument_source_code.replace('<<stac_collection_id>>', str(stac_collection_id))
+    
+    template_notebook['cells'][parse_block]['source'] = argument_source_code
+    
+    
+    print("time arguments appending...")
+    time_argument_source_code = template_notebook['cells'][parse_block+1]['source']
+    if time_interval is None:
+        time_argument_source_code += "\n#No time range arguments provided\ntime_range=None"
     else:
-        print(f"error - {time_interval} must have 1 or 2 datetime elements!")
-        time_interval = None
+        time_argument_source_code += get_time_interval_source_code(time_interval)
+    template_notebook['cells'][parse_block+1]['source'] = time_argument_source_code
+    
+    filepath = 'assets/custom_notebook.ipynb'
+    nbf.write(template_notebook, filepath)
+    return filepath
+    
+    
+def get_time_interval_source_code(time_interval:list): 
+    return f"""
+date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+time_start_str='{str(time_interval[0])}'
+time_end_str='{str(time_interval[1])}'
 
-    # TODO create python notebook    
-    template_notebook = nbf.read('assets/notebook_template.ipynb', as_version=4)
+time_start = datetime.strptime(time_start_str, date_format)
+time_end = datetime.strptime(time_end_str, date_format)
 
-    args = {
-        'api_link': api_link, 
-        'stac_collection_id': stac_collection_id, 
-        'location': geojson_polygon, 
-        'time': time_interval, 
-        'item_limit': limit, 
-    }
+# the actual timerange (datetime objects)
+time_range = [time_start, time_end]
 
-    for cell in template_notebook['cells']:
-        for key, value in args.items():
-            cell['source'] = cell['source'].replace(f'{{{{{key}}}}}', str(value))
-            pass
-    nbf.write(template_notebook, 'custom_notebook.ipynb')
+"""
     
