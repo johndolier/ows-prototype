@@ -28,7 +28,7 @@ class DataRetriever:
         self.graph_name = graph_name
         
         # fetch STAC source information
-        self.stac_source_dict = self._fetch_stac_source_information()
+        self.stac_source_dict = self.__fetch_stac_source_information()
 
         # uncomment one of the following lines to use the preferred web index
         self.index_source = "chatnoir"
@@ -40,9 +40,9 @@ class DataRetriever:
             Makes web query on selected source (chatnoir or prototype webindex application -> OWS)
         '''
         if self.index_source == "chatnoir":
-            results = self._make_web_query_chatnoir(query=query, limit=limit, verbose=verbose)
+            results = self.__make_web_query_chatnoir(query=query, limit=limit, verbose=verbose)
         elif self.index_source == "prototype_webindex":
-            results = self._make_web_query_prototype_webindex(query=query, limit=limit, verbose=verbose)
+            results = self.__make_web_query_prototype_webindex(query=query, limit=limit, verbose=verbose)
         else:
             print(f"error - invalid state! did not find web index source for {self.index_source}")
             results = None
@@ -50,12 +50,12 @@ class DataRetriever:
     
     def make_stac_item_query(self, stac_collection_id:str, location_filters:list[dict], time_interval:list, limit:int = 100) -> list[dict]:
         # TODO find better request strategy for STAC items? 
-        stac_source = self._get_stac_source(stac_collection_id=stac_collection_id)
+        stac_source = self.__get_stac_source(stac_collection_id=stac_collection_id)
         api_link = self.stac_source_dict[stac_source]['api_link']
-        catalog = self._get_catalog(api_link)
+        catalog = self.__get_catalog(api_link)
         
-        location_filters = self._get_geojson_from_location_filters(location_filters)
-        time_interval = self._get_time_interval(time_interval)
+        location_filters = self.__get_geojson_from_location_filters(location_filters)
+        time_interval = self.__get_time_interval(time_interval)
         
         search_items = catalog.search(
             max_items = limit, 
@@ -97,8 +97,8 @@ class DataRetriever:
         api_link = self.stac_source_dict[stac_source]['api_link']
         
         # transform location filters (coordinates) and time interval
-        coordinates = self._get_geojson_from_location_filters(location_filters)['coordinates']
-        time_interval = self._get_time_interval(time_interval)        
+        coordinates = self.__get_geojson_from_location_filters(location_filters)['coordinates']
+        time_interval = self.__get_time_interval(time_interval)        
             
         template_notebook = nbf.read('assets/STAC_notebook_template.ipynb', as_version=4)
         
@@ -117,7 +117,7 @@ class DataRetriever:
         if time_interval is None:
             time_argument_source_code += "\n#No time range arguments provided\ntime_range=None"
         else:
-            time_argument_source_code += self._get_time_interval_source_code(time_interval)
+            time_argument_source_code += self.__get_time_interval_source_code(time_interval)
         template_notebook['cells'][PARSE_BLOCK_IDX+1]['source'] = time_argument_source_code
         
         filepath = 'assets/custom_notebook.ipynb'
@@ -229,7 +229,7 @@ class DataRetriever:
 
 
   # WEB QUERY HELPER FUNCTIONS
-    def _make_web_query_chatnoir(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
+    def __make_web_query_chatnoir(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
         body = {
             'apikey': self.api_key, 
             'query': query, 
@@ -273,7 +273,7 @@ class DataRetriever:
             })
         return transformed_results
 
-    def _make_web_query_prototype_webindex(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
+    def __make_web_query_prototype_webindex(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
         request_url = f"{PROTOTYPE_WEBINDEX_ENDPOINT}search?q={query}&index=demo-dlrsciencesearch&limit={limit}"
         if verbose:
             print(f"making request on url: {request_url}")
@@ -303,14 +303,14 @@ class DataRetriever:
         return transformed_results
 
   # STAC QUERY HELPER FUNCTIONS
-    def _get_catalog(self, catalog_url:str):
+    def __get_catalog(self, catalog_url:str):
         if "planetarycomputer" in catalog_url:
             catalog = pystac_client.Client.open(catalog_url, modifier=planetary_computer.sign_inplace)
         else:
             catalog = pystac_client.Client.open(catalog_url)
         return catalog
 
-    def _get_geojson_from_location_filters(self, location_filters):
+    def __get_geojson_from_location_filters(self, location_filters):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO generalize for more cases
         # for now, only bounding boxes are supported!
@@ -341,7 +341,7 @@ class DataRetriever:
       
         return geojson.MultiPolygon(coordinates)
 
-    def _get_time_interval(self, time_interval:list):
+    def __get_time_interval(self, time_interval:list):
         STR_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
         if time_interval is None:
             return None
@@ -354,7 +354,7 @@ class DataRetriever:
             return None
         return time_interval
 
-    def _fetch_stac_source_information(self):
+    def __fetch_stac_source_information(self):
         ''' Loop over STACSource nodes and save information in dictionary '''
         d = {}
         for node in self.db["STACSource"].fetchAll():
@@ -365,7 +365,7 @@ class DataRetriever:
             }
         return d
 
-    def _get_stac_source(self, stac_collection_id:str):
+    def __get_stac_source(self, stac_collection_id:str):
         ''' 
             Performs an ArangoQuery to determine the source of the STAC collection
             Returns a string which identifies the source
@@ -384,7 +384,7 @@ class DataRetriever:
             print(f"error - could not load stac collection node with id {stac_collection_id}")
             return None
     
-    def _get_time_interval_source_code(time_interval:list) -> str:
+    def __get_time_interval_source_code(time_interval:list) -> str:
         return f"""
 date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
 time_start_str='{str(time_interval[0])}'
@@ -400,9 +400,9 @@ time_range = [time_start, time_end]
 
   # ARANGODB QUERY HELPER FUNCTIONS
 
-    def _get_nodes_from_keyword(self, keyword:str) -> list[str]:
+    def __get_nodes_from_keyword(self, keyword:str) -> list[str]:
         # returns list of id's wich are connected with HasKeyword edge (either STACCollection or Publication)
-        keyword = self._create_key_from_keyword(keyword=keyword.lower())
+        keyword = self.__create_key_from_keyword(keyword=keyword.lower())
         query_params = {
             'keyword': f'Keyword/{keyword}', 
         }
@@ -413,7 +413,7 @@ time_range = [time_start, time_end]
             result = []
         return result
 
-    def _get_related_eo_connections(self, key:str, collection:str) -> list[str]:
+    def __get_related_eo_connections(self, key:str, collection:str) -> list[str]:
         # returns list of id's of eo missions/instruments that are connected to given node (either STACCollection or publication)
         node_id = f"{collection}/{key}"
         query_params = {
@@ -426,7 +426,7 @@ time_range = [time_start, time_end]
             result = []
         return result
 
-    def _create_key_from_keyword(self, keyword:str) -> str:
+    def __create_key_from_keyword(self, keyword:str) -> str:
         # keyword argument should already be lowercase!
         import re
         try:

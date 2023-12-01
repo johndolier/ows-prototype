@@ -42,8 +42,8 @@ class QueryAnalyzer:
             if word.lower() not in self.stopwords:
                 general_keywords.append(word)
         
-        parsed_loc_list = self._get_location_and_geobounds_list(loc_list)
-        parsed_dates_list = self._get_time_intervals(date_list)
+        parsed_loc_list = self.__get_location_and_geobounds_list(loc_list)
+        parsed_dates_list = self.__get_time_intervals(date_list)
         
         if not parsed_loc_list:
             print("(QueryAnalyzer) could not extract locations from query")
@@ -56,7 +56,7 @@ class QueryAnalyzer:
         }
          
 
-    def _get_time_intervals(self, date_list:list[str]) -> tuple[datetime, datetime]:
+    def __get_time_intervals(self, date_list:list[str]) -> tuple[datetime, datetime]:
         ''' this function transforms the extracted time mentions in the query into a valid datetime time range
             if no dates are provided, it returns an empty list
             otherwise, it will compute a time range accordingly 
@@ -78,7 +78,7 @@ class QueryAnalyzer:
         print(f"parsed date expression ({date}) into time interval (start: {start_dt}, end: {end_dt})")
         return [start_dt, end_dt]
 
-    def _get_location_and_geobounds_list(self, loc_list:list[str]):
+    def __get_location_and_geobounds_list(self, loc_list:list[str]):
         ''' 
             Fetches bounding box for best match with geonames.org
             Returns a combined list of location references and bounding boxes
@@ -97,7 +97,7 @@ class QueryAnalyzer:
                     'coords': bbox
                 }
             except Exception as e:
-                print(e)
+                print(f"exception in _get_bbox_from_location", e)
                 geobounds = None
             
             if geobounds is None:
@@ -127,7 +127,7 @@ class QueryAnalyzer:
             ]
             return bbox
         except Exception as e:
-            print(e)
+            print(f"exception thrown in __get_bbox", e)
 
 
 
