@@ -11,3 +11,4 @@ pyyaml==6.0.1
 sentence-transformers==2.2.2
 python-arango==7.8.1
 cag==1.5.17
+nbformat==5.9.2
