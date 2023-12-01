@@ -8,18 +8,19 @@ import os
 from starlette.background import BackgroundTask
 
 
+
 # add path to import queries
 import sys
 sys.path.append("src/")
 
-from queries.web_query import *
-from queries.arango_query import *
-from queries.QueryRequest import *
-from queries.stac_queries import make_stac_item_query, fetch_stac_source_information, create_stac_export_notebook
-from queries.QueryAnalyzer import QueryAnalyzer
-from database.Database import init_db, get_connection
 
 from utils import get_stac_collection_from_id
+
+from queries.Requests import *
+from queries.QueryAnalyzer import QueryAnalyzer
+from queries.DataRetriever import DataRetriever
+from database.Database import init_db, get_connection
+
 
 
 
@@ -78,20 +79,17 @@ app.add_middleware(
 )
 
 
-# fetch information for stac sources
-STAC_SOURCE_DICT = fetch_stac_source_information(db=db)
+# create QueryAnalyzer object
+qa = QueryAnalyzer(geonames_username='johndolier')
 
-# create QueryAnalyzer class
-qa = QueryAnalyzer(geonames_username=geonames_username)
-
+# create DataRetriever object
+data_retriever = DataRetriever(web_api_key=web_api_key, db_instance=db, graph_name=graph_name)
 
 # DEFINE ENDPOINTS
 
 @app.post("/pubRequest")
-def make_pub_request(request: PubRequest) -> tuple[str, list[dict]]:
-    results = make_publications_query(
-        db=db, 
-        graph_name=graph_name, 
+def pub_request(request: PubRequest) -> tuple[str, list[dict]]:
+    results = data_retriever.make_publications_query(
         query=request.query, 
         keywords=request.keywords, 
         #limit=request.limit, 
@@ -99,30 +97,22 @@ def make_pub_request(request: PubRequest) -> tuple[str, list[dict]]:
     return ('publications', results)
 
 @app.post("/stacCollectionRequest")
-def make_stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[dict]]:
-    results = make_stac_collection_query(
-        db=db, 
-        graph_name=graph_name, 
+def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[dict]]:
+    results = data_retriever.make_stac_collection_query(
         query=request.query, 
         keywords=request.keywords, 
         #limit=request.limit, 
     )
-    
     return ('stac_collections', results)
 
 @app.post("/webRequest")
-def make_web_request(request: WebRequest) -> tuple[str, list[dict]]:
-    results = make_web_query(
-        api_key=web_api_key, 
-        query=request.query, 
-        #limit=request.limit, 
-        verbose=True,
-    )
+def web_request(request: WebRequest) -> tuple[str, list[dict]]:
+    results = data_retriever.make_web_query(query=request.query, limit=request.limit, verbose=True)
     return ('web_documents', results)
 
 @app.get("/keywordRequest")
 def get_all_keywords_request():
-    keywords = get_all_keywords(db=db)
+    keywords = data_retriever.get_all_keywords()
     return keywords
 
 @app.post("/queryAnalyzerRequest")
@@ -152,16 +142,12 @@ def make_stac_item_request(request: STACItemRequest, response: Response) -> tupl
         response.status_code = 400
         return None
     
-    stac_items = make_stac_item_query(
-        db=db, 
-        graph_name=graph_name, 
+    stac_items = data_retriever.make_stac_item_query(
         stac_collection_id=stac_collection_id, 
         location_filters=request.location_filters, 
         time_interval=request.time_interval, 
         limit=request.limit, 
-        stac_source_dict=STAC_SOURCE_DICT, 
     )
-
     return ('stac_items', stac_items)
 
 @app.post("/notebookExportRequest", status_code=200)
@@ -174,14 +160,12 @@ def create_notebook_export(request: NotebookExportRequest, response: Response):
         response.status_code = 400
         return None
     
-    filepath = create_stac_export_notebook(
-        db=db, 
-        graph_name=graph_name, 
+    filepath = data_retriever.create_notebook_export(
         stac_collection_id=stac_collection_id, 
-        location_filters=request.location_filters,
+        location_filters=request.location_filters, 
         time_interval=request.time_interval, 
-        stac_source_dict=STAC_SOURCE_DICT, 
     )
+    
     if filepath is None:
         print(f"something went wrong.. could not create python notebook for STAC download...")
         return None
