@@ -92,10 +92,13 @@ class QueryAnalyzer:
             try:
                 # TODO add more shapes (currently only bounding boxes are supported)
                 bbox = self.__get_bbox_from_location(loc)
-                geobounds = {
-                    'type': 'bbox', 
-                    'coords': bbox
-                }
+                if bbox is None:
+                    geobounds = None
+                else:
+                    geobounds = {
+                        'type': 'bbox', 
+                        'coords': bbox
+                    }
             except Exception as e:
                 print(f"exception in _get_bbox_from_location", e)
                 geobounds = None
@@ -104,7 +107,6 @@ class QueryAnalyzer:
                 print(f"warning - no bbox found for location {loc}")
                 continue # query failed
                 
-            #print(f"bbox found for location {loc}: {bbox}")
             result_list.append((loc, geobounds))
         return result_list
     
@@ -112,6 +114,10 @@ class QueryAnalyzer:
     def __get_bbox_from_location(self, location:str):
         # first request fetches geonames id (using best single match)
         g = geocoder.geonames(location, key=self.username)
+        if g.geonames_id is None:
+            print(f"error - geonames did not find any result for loaction {location}!")
+            return None
+        
         # second call fetches details (-> bbox)
         # https://geocoder.readthedocs.io/providers/GeoNames.html
         details = geocoder.geonames(g.geonames_id, method='details', key=self.username)
