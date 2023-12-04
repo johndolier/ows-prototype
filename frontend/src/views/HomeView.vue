@@ -82,18 +82,6 @@ import axios from 'axios';
 
 import { v4 as get_uid } from 'uuid';
 
-// HELPER FUNCTIONS FOR THIS MODULE
-// TODO move this to Utils
-function getBBoxFromBounds(bounds) {
-  let bbox = [
-    bounds.getSouth(),
-    bounds.getWest(), 
-    bounds.getNorth(), 
-    bounds.getEast()
-  ]
-  return bbox;
-}
-
 
 export default {
   name: 'HomeView',
@@ -263,7 +251,7 @@ export default {
       // hardcoded conversion of geobounds to bbox
       // TODO clean up
       if (geoBounds.type == 'bounds') {
-        const bbox = getBBoxFromBounds(geoBounds.coords);
+        const bbox = this.Utils.getBBoxFromBounds(geoBounds.coords);
         geoBounds.type = 'bbox';
         geoBounds.coords = bbox;
       }

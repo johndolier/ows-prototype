@@ -12,7 +12,17 @@ export default class {
           colour += value.toString(16).padStart(2, '0')
         }
         return colour
-      }
+      } 
+    
+    getBBoxFromBounds(bounds) {
+      let bbox = [
+        bounds.getSouth(),
+        bounds.getWest(), 
+        bounds.getNorth(), 
+        bounds.getEast()
+      ]
+      return bbox;
+    }
 }
 
 
