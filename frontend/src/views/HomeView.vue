@@ -70,7 +70,7 @@
         </DocumentListComponent>
         <MapComponent v-if="[2,3].includes(viewMode)"
           ref="mapRef" :documents="documents" :stacItems="permanentData.stac_collections" class="map-component"
-          @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters"
+          @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters" @requestGeotweets="requestGeotweets"
         />
       </div>
     </div>
@@ -626,7 +626,26 @@ export default {
         'query': this.userQuery
       };
       return axios.post(path, request);
-    }
+    }, 
+
+    async requestGeotweets() { 
+      const path = '/geotweetRequest';
+      // TODO: get search parameters from user
+      const request = {
+        'only_floods': true, 
+        'limit': 1000,
+      }
+      const response = await axios.post(path, request);
+
+      if (response.status != 200) {
+        console.log("something went wrong with geotweet request; status code " + response.status);
+        return;
+      }
+      // debug
+      console.log(response.data);
+
+      this.$refs.mapRef.showGeotweets(response.data);
+    }, 
   }, 
 
   watch: {

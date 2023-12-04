@@ -33,3 +33,7 @@ class NotebookExportRequest(BaseModel):
     collection_id: str
     location_filters: List[object] | None = None
     time_interval: List[object]
+
+class GeotweetRequest(BaseModel):
+    only_floods: bool
+    limit: PositiveInt

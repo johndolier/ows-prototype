@@ -173,6 +173,19 @@ def create_notebook_export(request: NotebookExportRequest, response: Response):
     return FileResponse(filepath, media_type="ipynb", background=BackgroundTask(cleanup, filepath))
 
 
+@app.post("/geotweetRequest")
+def get_all_geotweets(request: GeotweetRequest):
+    
+    geotweets = data_retriever.get_geotweets(
+        only_floods=request.only_floods, 
+        limit = request.limit, 
+    )
+    print(f"returning {len(geotweets)} geotweets...")
+    return geotweets
+
+
+
+########################################
 # HELPER FUNCTIONS
 def cleanup(filepath):
     # remove file after sending response to client

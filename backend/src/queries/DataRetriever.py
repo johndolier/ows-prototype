@@ -227,6 +227,33 @@ class DataRetriever:
         transformed_results = normalize_scoring_range(transformed_results, min_score, max_score)
         return transformed_results
 
+    def get_geotweets(self, only_floods:bool=False, limit:int = 100) -> list[dict]:
+        '''
+            Return list of geotweets
+        '''
+        path = "src/database/geotweets/geotweets_sample.geojson"
+        
+        with open(path, "r") as file:
+            # read geojson file
+            geojson_data = json.load(file)
+
+        tweets = geojson_data.get('features', [])
+        if not only_floods:
+            return tweets[:limit]
+        
+        # filter geotweets
+        filtered_tweets = []
+        for tweet in tweets:
+            try:
+                if not tweet['properties']['contains_flood']:
+                    continue
+                filtered_tweets.append(tweet)
+            except Exception as e:
+                print(e)
+                continue
+        
+        return filtered_tweets[:limit]
+        
 
   # WEB QUERY HELPER FUNCTIONS
     def __make_web_query_chatnoir(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:

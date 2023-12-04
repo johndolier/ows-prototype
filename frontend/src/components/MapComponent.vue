@@ -7,6 +7,9 @@
       <PButton v-if="isCurrentlyDrawing" class="inline-flex mx-2 left-button" severity="danger" size="small"
         label="Abort selection" @click="abortSelection">
       </PButton>
+      <PButton class="inline-flex mx-2 left-button" severity="info" size="small" label="Show Geotweets"
+        @click="requestGeotweets">
+      </PButton>
       <!--
       <PButton v-if="!isCurrentlyDrawing" class="inline-flex mx-2 left-button" severity="warning"
         size="small" label="Clear Search" @click="clearAllLocationFilters">
@@ -28,6 +31,9 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import 'leaflet-draw/dist/leaflet.draw.css';
 
+import { useScriptTag } from '@vueuse/core';
+useScriptTag('leaflet-heat.js');
+
 require('leaflet-draw');
 
 import { v4 as get_uid } from 'uuid';
@@ -40,7 +46,7 @@ export default {
     stacItems: Object, // object that holds all stac items that have been queried + meta data if it should be displayed etc...
   },
   inject: ['Utils'],
-  emits: ['addLocationFilter', 'clearAllLocationFilters'],  
+  emits: ['addLocationFilter', 'clearAllLocationFilters', 'requestGeotweets'], 
   components: {},
 
   data() {
@@ -158,7 +164,43 @@ export default {
 
       this.map.fitBounds(initialBounds);
     }, 
+    requestGeotweets() {
+      // example function to show geotweets (used for testing!)
+      this.$emit('requestGeotweets');
+    }, 
+    showGeotweets(geotweets) {
 
+      // display geotweets
+      // var geojsonLayer = L.geoJSON().addTo(this.map);
+      let tweetLatLongList = [];
+      for (const tweet of geotweets) {
+        // geojsonLayer.addData(tweet);
+        tweetLatLongList.push(tweet.geometry.coordinates);
+      }
+      this.addHeatMap(tweetLatLongList);
+    }, 
+
+    addHeatMap(coordinateList) {
+      // adds the coordinate list as a heatmap on the map
+      // TODO handle data structure (for later editing)
+
+      // add intensity as third parameter in list
+      // TODO use some (meaningful) weight for intensity?
+      let intensityList = [];
+      for (const coordinates of coordinateList) {
+        const intensity = [coordinates[0], coordinates[1], 0.5];
+        intensityList.push(intensity);
+      }
+      L.heatLayer(
+        intensityList, 
+        {
+          maxZoom: 3,
+          radius: 12, 
+          //gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'}, 
+          minOpacity: 0.3, 
+        }
+        ).addTo(this.map);
+    }
   },
 
   watch: {
@@ -191,7 +233,12 @@ export default {
   }, 
 
   mounted() {
-    this.map = L.map("mapContainer", { drawControl: false }).setView([45, 20], 5);
+    // build map
+    this.map = L.map("mapContainer", { 
+      drawControl: false, 
+      minZoom: 3, 
+      maxZoom: 10,
+    }).setView([45, 20], 5);
 
     L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
