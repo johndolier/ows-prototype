@@ -1,6 +1,6 @@
 <template>
   <div class="home h-screen w-screen">
-    <div class="w-full text-xl font-bold text-primary py-2 my-1 bg-primary">
+        <div class="w-full text-xl font-bold text-primary py-2 my-1 bg-primary">
       <header>OpenSearch@DLR Prototype</header>
     </div>
     <PToast position="top-center" group="tc" />
@@ -30,48 +30,43 @@
         <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
       </div>
     </PSidebar>
-    <div id="SearchHeader" class="w-full relative z-3 pt-2 my-1">
-      <div class="">
-        <span :class="queryIsLoading ? 'p-input-icon-right w-9' : 'p-input-icon-left w-9'">
-          <i :class="queryIsLoading ? 'pi pi-spin pi-spinner' : 'pi pi-search'"></i>
-          <InputText 
-            v-model="userQuery" v-on:keyup.enter="submitQuery" 
-            type="text" size="medium" placeholder="Search" class="inline w-full">
-          </InputText>
-        </span>
-        <PButton 
-          label="Submit" @click="submitQuery" size="small" rounded class="inline w-1 mx-2 text-sm">
-        </PButton>
-      </div>
-      <div class="flex">
-        <PButton 
-          :icon="showAdvancedSearch ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " 
-          size="small" @click="advancedSearchClick" label="Show advanced options" icon-pos="right"
-          rounded text class="ml-2 text-xs">
-        </PButton>
-      </div>
+
+    <div v-if="showStartScreen">
+      <!-- START SCREEN -->
+      <SearchHeaderComponent class="center"
+      :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch" startText="Start your search here..." 
+      @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
+      />
     </div>
-    <div id="DocumentBody" v-if="showDocumentBody" class="w-full z-1">
-      <div class="w-full py-2 my-1">
-        <SelectButton 
-          v-model="viewSelected" :options="viewOptions" optionValue="value" multiple aria-labelledby="multiple">
-          <template #option="slotProps">
-            <i :class="slotProps.option.icon"></i>
-          </template>
-        </SelectButton>
-      </div>
-      <div class="w-screen h-screen flex">
-        <!--TODO find better way to dynamically show map and document list-->
-        <DocumentListComponent v-if="[1,3].includes(viewMode)"
-          :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
-          :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="permanentData.stac_collections" 
-          @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
-          class="document-list-component">
-        </DocumentListComponent>
-        <MapComponent v-if="[2,3].includes(viewMode)"
-          ref="mapRef" :documents="documents" :stacItems="permanentData.stac_collections" class="map-component"
-          @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters" @requestGeotweets="requestGeotweets"
-        />
+    <div v-else>
+      <!-- "NORMAL" SCREEN -->
+      <SearchHeaderComponent class="center-x"
+        :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch"
+        @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
+      />
+      <div v-if="showDocumentBody" class="w-full z-1">
+        <div class="w-full py-2 my-1">
+          <SelectButton 
+            v-model="viewSelected" :options="viewOptions" optionValue="value" multiple aria-labelledby="multiple">
+            <template #option="slotProps">
+              <i :class="slotProps.option.icon"></i>
+            </template>
+          </SelectButton>
+        </div>
+        <div class="w-screen h-screen flex">
+          <!--TODO find better way to dynamically show map and document list-->
+          <DocumentListComponent v-if="[1,3].includes(viewMode)"
+            :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
+            :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="permanentData.stac_collections" 
+            @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
+            class="document-list-component">
+          </DocumentListComponent>
+          <MapComponent v-if="[2,3].includes(viewMode)"
+            ref="mapRef" :documents="documents" :stacItems="permanentData.stac_collections" class="map-component"
+            @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters" @requestGeotweets="requestGeotweets"
+          />
+        </div>
+>>>>>>> main
       </div>
     </div>
   </div>
@@ -82,21 +77,11 @@
 import MapComponent from '@/components/MapComponent.vue';
 import DocumentListComponent from '@/components/DocumentListComponent.vue';
 import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue';
+import SearchHeaderComponent from '@/components/SearchHeaderComponent.vue';
 
 import axios from 'axios';
 
 import { v4 as get_uid } from 'uuid';
-
-// HELPER FUNCTIONS FOR THIS MODULE
-function getBBoxFromBounds(bounds) {
-  let bbox = [
-    bounds.getSouth(),
-    bounds.getWest(), 
-    bounds.getNorth(), 
-    bounds.getEast()
-  ]
-  return bbox;
-}
 
 
 export default {
@@ -105,6 +90,7 @@ export default {
     MapComponent,
     DocumentListComponent, 
     LocationFilterComponentVue, 
+    SearchHeaderComponent, 
   }, 
   // inject helper functions
   inject: ['Utils'], 
@@ -130,14 +116,13 @@ export default {
       ],
       viewSelected: ["Map"], 
       showDocumentBody: true, 
+      showStartScreen: true, 
       // user input
       queryIsLoading: false,
-      userQuery: null, 
       keywords: null, 
       // FILTERS
       timeRangeFilter: [], 
       locationFilterList: [], 
-      keywordsFilterList: [], 
       // advanced search
       showAdvancedSearch: false, 
       // data types to select 
@@ -161,7 +146,6 @@ export default {
       //{'name': 'STAC Collections', 'code': 'stac_collections'}, 
       //{'name': 'Publications', 'code': 'pubs'}, 
     ]; 
-    //this.userQuery = 'floods';
     //this.submitQuery().then(console.log("query loaded"));
   }, 
 
@@ -268,7 +252,7 @@ export default {
       // hardcoded conversion of geobounds to bbox
       // TODO clean up
       if (geoBounds.type == 'bounds') {
-        const bbox = getBBoxFromBounds(geoBounds.coords);
+        const bbox = this.Utils.getBBoxFromBounds(geoBounds.coords);
         geoBounds.type = 'bbox';
         geoBounds.coords = bbox;
       }
@@ -330,12 +314,6 @@ export default {
       //console.log("end time was parsed as: " + timeResults[1]);
       this.timeRangeFilter = [startTime, endTime];
     }, 
-    addKeywordFilters(generalKeywords) {
-      // add keywords to keyword filter list
-      this.keywordsFilterList = generalKeywords;
-      //this.keywordsFilterList.push.apply(this.keywordsFilterList, generalKeywords);
-    }, 
-
     // UI STATE METHODS
     advancedSearchClick() {
       this.showAdvancedSearch = !this.showAdvancedSearch;
@@ -381,9 +359,9 @@ export default {
     }, 
 
     // BACKEND QUERY METHODS
-    async submitQuery() {
+    async submitQuery(userQuery) {
       //console.log("starting to submit query");
-      if (this.userQuery == null) {
+      if (userQuery == null) {
         //console.log("no user query provided");
         this.$toast.add({
           severity: 'error', 
@@ -396,36 +374,36 @@ export default {
       }
       this.queryIsLoading = true;
 
-      // first, make query analyzer request to parse location, time and keywords from query
-      const analyzerQueryResult = await this.analyzeQueryRequest();
+      // first, analyze query and parse location, time and keywords from query
+      const analyzerQueryResult = await this.analyzeQueryRequest(userQuery);
+      let keywords = null;
       if (analyzerQueryResult.status != 200) {
         console.log("error - query analyzer request failed! " + analyzerQueryResult.status + analyzerQueryResult.statusText);
       }
       else {
-        const analyzerQueryResultData = analyzerQueryResult.data
         // TODO let users confirm locations and dates
-        this.addGeoparsingLocationFilters(analyzerQueryResultData.locations);
-        this.addTimeParsingFilters(analyzerQueryResultData.dates);
-        this.addKeywordFilters(analyzerQueryResultData.general_keywords);
+        this.addGeoparsingLocationFilters(analyzerQueryResult.data.locations);
+        this.addTimeParsingFilters(analyzerQueryResult.data.dates);
+        keywords = analyzerQueryResult.data.general_keywords;
       }
 
       // after setting analyzer results from Query Analyzer, continue with normal document query
-      await this.makeDocumentQueryRequest();
+      await this.makeDocumentQueryRequest(userQuery, keywords);
     }, 
 
-    async makeDocumentQueryRequest() {
+    async makeDocumentQueryRequest(userQuery, keywords) {
       // TODO build in error handling
       const promises = []; 
       if (this.selectPublications) {
-        const pubRequest = this.requestPublications();
+        const pubRequest = this.requestPublications(userQuery, keywords);
         promises.push(pubRequest);
       }
       if (this.selectSTACCollections) {
-        const stacCollectionRequest = this.requestSTACCollections();
+        const stacCollectionRequest = this.requestSTACCollections(userQuery, keywords);
         promises.push(stacCollectionRequest);
       }
       if (this.selectWebDocuments) {
-        const webResultRequest = this.requestWebResources();
+        const webResultRequest = this.requestWebResources(userQuery);
         promises.push(webResultRequest);
       }
       // wait for all queries
@@ -452,6 +430,9 @@ export default {
         this.showDocumentBody = false;
       } finally {
         this.queryIsLoading = false;
+        if (this.showStartScreen) {
+          this.showStartScreen = false;
+        }
         this.showMapAndList();
       }
     }, 
@@ -573,28 +554,28 @@ export default {
       }
     }, 
 
-    async requestPublications() {
+    async requestPublications(userQuery, keywords) {
       const path = '/pubRequest'
       const request = {
-        'query': this.userQuery, 
-        'keywords': this.keywordsFilterList, 
+        'query': userQuery, 
+        'keywords': keywords, 
         'limit': 10, 
       };
       return axios.post(path, request);
     }, 
-    async requestWebResources() {
+    async requestWebResources(userQuery) {
       const path = '/webRequest';
       const request = {
-        'query': this.userQuery, 
+        'query': userQuery, 
         'limit': 10, 
       };
       return axios.post(path, request);
     }, 
-    async requestSTACCollections() {
+    async requestSTACCollections(userQuery, keywords) {
       const path = '/stacCollectionRequest';
       const request = {
-        'query': this.userQuery, 
-        'keywords': this.keywordsFilterList, 
+        'query': userQuery, 
+        'keywords': keywords, 
         'limit': 10, 
       };
       return axios.post(path, request);
@@ -620,10 +601,10 @@ export default {
         responseType: 'arraybuffer'
       });
     }, 
-    async analyzeQueryRequest() {
+    async analyzeQueryRequest(userQuery) {
       const path = '/queryAnalyzerRequest';
       const request = {
-        'query': this.userQuery
+        'query': userQuery
       };
       return axios.post(path, request);
     }, 
