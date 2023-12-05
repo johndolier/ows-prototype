@@ -249,22 +249,22 @@ export default {
     addLocationFilter(id, geoBounds) {
       if (this.locationFilterList.find((element) => element.id == id) !== undefined) {
         // id is already in list
-        console.log("cannot add filter with id: " + id + " because it is already present in filter list");
+        console.log("warning - cannot add filter with id: " + id + " because it is already present in filter list");
         return;
       }
+      // only allow bbox or polygon to be added to location filter list!
+      if (!['bbox', 'polygon'].includes(geoBounds.type)) {
+        // TODO automatically convert other types?
+        console.log("warning - unknown geoBounds type: " + geoBounds.type + "; cannot creaete location filter (addLocationFilter)");
+        return;
+      }
+
       let layer = null;
       if (this.$refs.mapRef != undefined) {
         layer = this.$refs.mapRef.addLocationFilterLayer(geoBounds);
       }
       // else -> map was not created yet
 
-      // hardcoded conversion of geobounds to bbox
-      // TODO clean up
-      if (geoBounds.type == 'bounds') {
-        const bbox = this.Utils.getBBoxFromBounds(geoBounds.coords);
-        geoBounds.type = 'bbox';
-        geoBounds.coords = bbox;
-      }
       const filterObj = {
         'id': id, 
         'layer': layer, 

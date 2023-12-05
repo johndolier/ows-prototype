@@ -104,19 +104,10 @@ export default {
     getBoundsFromBBox(bbox) {
       return new L.LatLngBounds([bbox[0], bbox[1]], [bbox[2], bbox[3]]);
     }, 
-    getBoundsFromPolygon(polygon) {
-      // TODO
-      console.log("getBoundsFromPolygon not implemented!");
-      console.log(polygon);
-      return;
-    }, 
-    getBoundsFromMultiPolygon(bbox) {
-      // TODO
-      console.log("getBoundsFromMultiPolygon not implemented!");
-      console.log(bbox);
-      return;
-    }, 
     createLayerFromGeoBounds(geoBounds) {
+      // takes some form of geoBounds object and transforms it into Leaflet Layer form
+      // types: bbox, bounds, Polygon
+
       const color = '#ff7800';
       if (geoBounds.type == "bbox") {
         // bbox is [south, west, north, east] 
@@ -128,17 +119,17 @@ export default {
         const layer = new L.rectangle(geoBounds.coords, {color: color});
         return layer;
       }
-      else if (geoBounds.type == 'Polygon') {
+      else if (geoBounds.type == 'polygon') {
         // TODO
-      }
-      else if (geoBounds.type == 'MultiPolygon') {
-        // TODO
+        const layer = new L.Polygon(geoBounds.coords, {color: color});
+        return layer;
       }
       // TODO implement other shapes
       console.log("warning - createLayerFromGeoInformation: unknown type (" + geoBounds.type + ")");
     }, 
     focusMap(geoBoundsList) {
       // focus map by using the center of the geobounds list
+
       let initialBounds = null;
       for (const geoBounds of geoBoundsList) {
         // convert 
@@ -160,7 +151,8 @@ export default {
         }
       }
       if (initialBounds == null) {
-        // TODO could not compute bounds 
+        console.log("warning - could not compute geoBounds for geoBoundsList; focusMap failed");
+        console.log(geoBoundsList);
         return;
       }
       //console.log(initialBounds);
@@ -247,6 +239,8 @@ export default {
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
+    // enable drawing shapes on map
+    // FeatureGroup is to store editable layers
     let drawnItems = new L.FeatureGroup();
     this.map.addLayer(drawnItems);
     this.drawControl = new L.Control.Draw({
@@ -262,17 +256,16 @@ export default {
       // TODO enable polygon (currently just bbox is allowed)
       this.isCurrentlyDrawing = false;
 
-      /*const bbox = [
-        bounds.getSouth(),
-        bounds.getWest(), 
-        bounds.getNorth(), 
-        bounds.getEast(), 
-      ]*/
       const id = get_uid();
+      // const layerObj = {
+      //   'type': 'bounds', 
+      //   'coords':  e.layer.getBounds(), 
+      // };
       const geoBounds = {
-        'type': 'bounds', 
-        'coords':  e.layer.getBounds(), 
+        'type': 'polygon', 
+        'coords':  e.layer.getLatLngs(), 
       };
+
       this.$emit('addLocationFilter', id, geoBounds);
     });
 
