@@ -217,75 +217,62 @@ export default {
     // MAP COMPONENT METHODS
     selectMapCoordinates() {
       // enable filter area drawing in map component
-      this.$toast.add({
-          severity: 'warn', 
-          summary: 'Select area', 
-          detail: 'Please select area in map for filtering', 
-          life: 5000, 
-          group: 'tc'
-      });
-      // close sidebar
-      this.showAdvancedSearch = false;
-      // show document body and map to select 
-      this.showDocumentBody = true;
-      this.showMap();
+      // this.$toast.add({
+      //     severity: 'warn', 
+      //     summary: 'Select area', 
+      //     detail: 'Please select area in map for filtering', 
+      //     life: 5000, 
+      //     group: 'tc'
+      // });
+      // // close sidebar
+      // this.showAdvancedSearch = false;
+      // // show document body and map to select 
+      // this.showDocumentBody = true;
+      // this.showMap();
 
-      // TODO wait until map is mounted! (implement correct function)
-      function wait() {
-        console.log("waiting...");
-      }
+      // // TODO wait until map is mounted! (implement correct function)
+      // function wait() {
+      //   console.log("waiting...");
+      // }
       
-      while (this.$refs.mapRef === undefined) {
-        console.log("set timeout");
-        setTimeout(wait, 1000);
-      }
-      // call selectCoordinates once the map is mounted
-      this.$refs.mapRef.selectCoordinates();
+      // while (this.$refs.mapRef === undefined) {
+      //   console.log("set timeout");
+      //   setTimeout(wait, 1000);
+      // }
+      // // call selectCoordinates once the map is mounted
+      // this.$refs.mapRef.selectCoordinates();
+      console.log("not used anymore! (selectMapCoordinates)");
+
     }, 
     updateLocationFilterList(id, layer) {
       // this function can be used by the map component to add a layer into the locationFilterList
       this.locationFilterList[id].layer = layer;
     }, 
-    addLocationFilter(id, geoBounds) {
+    addLocationFilter(id, geoBounds, userDrawn) {
+      // adds location filter to locationFilterList
+      // userDrawn indicates if it comes from draw module (Leaflet) or dynamically from geoparsing (backend)
+      // note: Layer must be added to map before manually
+
       if (this.locationFilterList.find((element) => element.id == id) !== undefined) {
         // id is already in list
         console.log("warning - cannot add filter with id: " + id + " because it is already present in filter list");
         return;
       }
+
       // only allow bbox or polygon to be added to location filter list!
       if (!['bbox', 'polygon'].includes(geoBounds.type)) {
         // TODO automatically convert other types?
         console.log("warning - unknown geoBounds type: " + geoBounds.type + "; cannot creaete location filter (addLocationFilter)");
         return;
       }
-
-      let layer = null;
-      if (this.$refs.mapRef != undefined) {
-        layer = this.$refs.mapRef.addLocationFilterLayer(geoBounds);
-      }
-      // else -> map was not created yet
-
       const filterObj = {
         'id': id, 
-        'layer': layer, 
         'geoBounds': geoBounds, 
+        'userDrawn': userDrawn, 
       }; 
       this.locationFilterList.push(filterObj);
     }, 
-    removeLocationFilter(id) {
-      const filterObj = this.locationFilterList.find((element) => element.id == id);
-      if (filterObj == undefined) {
-        console.log("warning - did not find id: " + id + " in locationFilterList; cannot remove filter!");
-        return;
-      }
-      this.$refs.mapRef.removeFilterLayer(filterObj.layer)
-      // remove filter from list
-      this.locationFilterList = this.locationFilterList.filter((element) => element.id != id);
-    },
     clearAllLocationFilters() {
-      for (const filter of this.locationFilterList) {
-        this.removeLocationFilter(filter.id);
-      }
       this.locationFilterList = [];
     },
     addGeoparsingLocationFilters(locationResults) {
@@ -301,7 +288,11 @@ export default {
         // add filter for each found location
         const bounds = locationObj[1];
         const id = get_uid();
-        this.addLocationFilter(id, bounds);
+        this.addLocationFilter(id, bounds, false);
+        // add layer to map
+        if (this.$refs.mapRef !== undefined) {
+          this.$refs.mapRef.addLocationFilterLayer(bounds);
+        }
       }
       // focus map
       this.focusMapOnLocationFilters();
