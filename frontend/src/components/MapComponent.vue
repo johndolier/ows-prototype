@@ -44,9 +44,10 @@ export default {
   props: {
     documents: Object, // object that holds all documents that should eventually be displayed in the Map component
     stacItems: Object, // object that holds all stac items that have been queried + meta data if it should be displayed etc...
+    initialLocationFilters: Object, // list of location filters from HomeView component (used for initializing map)
   },
   inject: ['Utils'],
-  emits: ['addLocationFilter', 'clearAllLocationFilters', 'requestGeotweets'], 
+  emits: ['addLocationFilter', 'clearAllLocationFilters', 'requestGeotweets', 'updateLocationFilterList', 'focusMapOnLocationFilters'], 
   components: {},
 
   data() {
@@ -105,11 +106,13 @@ export default {
     }, 
     getBoundsFromPolygon(polygon) {
       // TODO
+      console.log("getBoundsFromPolygon not implemented!");
       console.log(polygon);
       return;
     }, 
     getBoundsFromMultiPolygon(bbox) {
       // TODO
+      console.log("getBoundsFromMultiPolygon not implemented!");
       console.log(bbox);
       return;
     }, 
@@ -152,7 +155,7 @@ export default {
           initialBounds = currentBounds;
         }
         else {
-          console.log(initialBounds);
+          //console.log(initialBounds);
           initialBounds = initialBounds.extend(currentBounds);
         }
       }
@@ -160,7 +163,7 @@ export default {
         // TODO could not compute bounds 
         return;
       }
-      console.log(initialBounds);
+      //console.log(initialBounds);
 
       this.map.fitBounds(initialBounds);
     }, 
@@ -272,6 +275,21 @@ export default {
       };
       this.$emit('addLocationFilter', id, geoBounds);
     });
+
+    // add layers from location filters that have been queued up by now
+    let idx = 0;
+    for (const filterObj of this.initialLocationFilters) {
+      if (filterObj.layer == null) {
+        // layer was not created before
+        const layer = this.addLocationFilterLayer(filterObj.geoBounds);
+        this.$emit('updateLocationFilterList', idx, layer);
+      }
+      idx += 1;
+    }
+
+    // focus map at the beginning
+    this.$emit('focusMapOnLocationFilters');
+
   },
 
   onBeforeUnmount() {

@@ -62,11 +62,12 @@
             class="document-list-component">
           </DocumentListComponent>
           <MapComponent v-if="[2,3].includes(viewMode)"
-            ref="mapRef" :documents="documents" :stacItems="permanentData.stac_collections" class="map-component"
-            @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters" @requestGeotweets="requestGeotweets"
+            class="map-component" ref="mapRef"
+            :documents="documents" :stacItems="permanentData.stac_collections" :initial-location-filters="locationFilterList"
+            @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters" @requestGeotweets="requestGeotweets" 
+            @update-location-filter-list="updateLocationFilterList" @focus-map-on-location-filters="focusMapOnLocationFilters"
           />
         </div>
->>>>>>> main
       </div>
     </div>
   </div>
@@ -240,7 +241,10 @@ export default {
       }
       // call selectCoordinates once the map is mounted
       this.$refs.mapRef.selectCoordinates();
-
+    }, 
+    updateLocationFilterList(id, layer) {
+      // this function can be used by the map component to add a layer into the locationFilterList
+      this.locationFilterList[id].layer = layer;
     }, 
     addLocationFilter(id, geoBounds) {
       if (this.locationFilterList.find((element) => element.id == id) !== undefined) {
@@ -248,7 +252,12 @@ export default {
         console.log("cannot add filter with id: " + id + " because it is already present in filter list");
         return;
       }
-      const layer = this.$refs.mapRef.addLocationFilterLayer(geoBounds);
+      let layer = null;
+      if (this.$refs.mapRef != undefined) {
+        layer = this.$refs.mapRef.addLocationFilterLayer(geoBounds);
+      }
+      // else -> map was not created yet
+
       // hardcoded conversion of geobounds to bbox
       // TODO clean up
       if (geoBounds.type == 'bounds') {
@@ -286,16 +295,17 @@ export default {
         return;
       }
       // TODO ask users for confirmation of locations
-      let geoBoundsList = [];
+
+      // create location filters in map and add to list
       for (const locationObj of locationResults) {
         // add filter for each found location
         const bounds = locationObj[1];
         const id = get_uid();
         this.addLocationFilter(id, bounds);
-        geoBoundsList.push(bounds);
       }
-      // center map around found location(s)
-      this.$refs.mapRef.focusMap(geoBoundsList);
+      // focus map
+      this.focusMapOnLocationFilters();
+
     }, 
     addTimeParsingFilters(timeResults) {
       if (timeResults.length == 0) {
@@ -314,6 +324,24 @@ export default {
       //console.log("end time was parsed as: " + timeResults[1]);
       this.timeRangeFilter = [startTime, endTime];
     }, 
+    focusMapOnLocationFilters() {
+      // focus map on existing location filters if they exist
+      if (this.$refs.mapRef == undefined) {
+        // map does not exist, cannot focus
+        console.log("warning - map does not exist, therefore cannot focus on location filters (likely a startscreen problem)");
+        return;
+      }
+      let geoBoundsList = [];
+      for (const filterObj of this.locationFilterList) {
+        // add filter for each found location
+        const bounds = filterObj.geoBounds;
+        if (bounds != undefined) {
+          geoBoundsList.push(bounds);
+        }
+      }
+      this.$refs.mapRef.focusMap(geoBoundsList);
+    }, 
+
     // UI STATE METHODS
     advancedSearchClick() {
       this.showAdvancedSearch = !this.showAdvancedSearch;
@@ -433,7 +461,7 @@ export default {
         if (this.showStartScreen) {
           this.showStartScreen = false;
         }
-        this.showMapAndList();
+        this.showMapAndList();        
       }
     }, 
 
