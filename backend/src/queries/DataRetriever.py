@@ -93,7 +93,7 @@ class DataRetriever:
             Placeholders get replaced by the specified arguments (STAC collection ID, location coordinates, time interval...)
         '''
         
-        stac_source = self._get_stac_source(stac_collection_id=stac_collection_id)
+        stac_source = self.__get_stac_source(stac_collection_id=stac_collection_id)
         api_link = self.stac_source_dict[stac_source]['api_link']
         
         # transform location filters (coordinates) and time interval
@@ -339,33 +339,37 @@ class DataRetriever:
 
     def __get_geojson_from_location_filters(self, location_filters):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
-        # TODO generalize for more cases
-        # for now, only bounding boxes are supported!
-        if len(location_filters) == 1:
-            # only one filter provided
-            bbox = location_filters[0]['coords']
-            coordinates = [[
-                [bbox[1], bbox[0]], 
-                [bbox[3], bbox[0]], 
-                [bbox[3], bbox[2]], 
-                [bbox[1], bbox[2]], 
-                [bbox[1], bbox[0]]
-            ]]
-            return geojson.Polygon(coordinates)
+        # TODO handle multiple different shapes
 
-        # multiple filters
         coordinates = []
         for filter in location_filters:
-            bbox = filter['coords']
-            new_coord = [[
-                [bbox[1], bbox[0]], 
-                [bbox[3], bbox[0]], 
-                [bbox[3], bbox[2]], 
-                [bbox[1], bbox[2]], 
-                [bbox[1], bbox[0]]
-            ]]
+            if filter['type'] == 'bbox':
+                bbox = filter['coords']
+                new_coord = [[
+                    [bbox[1], bbox[0]], 
+                    [bbox[3], bbox[0]], 
+                    [bbox[3], bbox[2]], 
+                    [bbox[1], bbox[2]], 
+                    [bbox[1], bbox[0]]
+                ]]
+            elif filter['type'] == 'polygon':
+                new_coord = []
+                for latlng_dict in filter['coords'][0]:
+                    lat = latlng_dict.get('lat')
+                    lng = latlng_dict.get('lng')
+                    new_coord.append([lng, lat])
+                    
+                # add first point to list to close the loop
+                last_lat = filter['coords'][0][0].get('lat')
+                last_lng = filter['coords'][0][0].get('lng')
+                new_coord.append([last_lng, last_lat])
+                
+                # put coordinates in brackets for right format
+                new_coord = [new_coord]
+            else:
+                print(f"ERROR - unknown type {filter['type']}")
+                continue
             coordinates.append(new_coord)
-      
         return geojson.MultiPolygon(coordinates)
 
     def __get_time_interval(self, time_interval:list):
