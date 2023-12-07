@@ -20,7 +20,7 @@ class PubRequest(BaseModel):
 class STACItemRequest(BaseModel):
     collection_id: str
     limit: PositiveInt
-    location_filters: List[object] | None = None
+    location_filter: object | None = None
     time_interval: List[object]
 
 class GeoparseRequest(BaseModel):
@@ -31,7 +31,7 @@ class QueryAnalyzerRequest(BaseModel):
 
 class NotebookExportRequest(BaseModel):
     collection_id: str
-    location_filters: List[object] | None = None
+    location_filter: object | None = None
     time_interval: List[object]
 
 class GeotweetRequest(BaseModel):

@@ -32,7 +32,7 @@ export default {
   props: {
     queryIsLoading: Boolean, 
     showAdvancedSearch: Boolean, 
-    startText: Object, 
+    startText: String, 
   }, 
 
   emits: [

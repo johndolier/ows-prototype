@@ -63,9 +63,8 @@
           </DocumentListComponent>
           <MapComponent v-if="[2,3].includes(viewMode)"
             class="map-component" ref="mapRef"
-            :documents="documents" :stacItems="permanentData.stac_collections" :initial-location-filters="locationFilterList"
-            @add-location-filter="addLocationFilter" @clear-all-location-filters="clearAllLocationFilters" @requestGeotweets="requestGeotweets" 
-            @update-location-filter-list="updateLocationFilterList" @focus-map-on-location-filters="focusMapOnLocationFilters"
+            :documents="documents" :stacItems="permanentData.stac_collections" :initial-focus-list="initialFocusList"
+            @requestGeotweets="requestGeotweets" 
           />
         </div>
       </div>
@@ -81,9 +80,6 @@ import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue
 import SearchHeaderComponent from '@/components/SearchHeaderComponent.vue';
 
 import axios from 'axios';
-
-import { v4 as get_uid } from 'uuid';
-
 
 export default {
   name: 'HomeView',
@@ -123,7 +119,7 @@ export default {
       keywords: null, 
       // FILTERS
       timeRangeFilter: [], 
-      locationFilterList: [], 
+      initialFocusList: null, 
       // advanced search
       showAdvancedSearch: false, 
       // data types to select 
@@ -202,11 +198,11 @@ export default {
     }, 
     selectWebDocuments() {
       if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
+        return false;
       }
       for (const selectedValue of this.selectedDatatypes) {
         if (selectedValue.code == 'web') {
-          return true;
+          return false;
         }
       }
       return false;
@@ -242,61 +238,6 @@ export default {
       // // call selectCoordinates once the map is mounted
       // this.$refs.mapRef.selectCoordinates();
       console.log("not used anymore! (selectMapCoordinates)");
-
-    }, 
-    updateLocationFilterList(id, layer) {
-      // this function can be used by the map component to add a layer into the locationFilterList
-      this.locationFilterList[id].layer = layer;
-    }, 
-    addLocationFilter(id, geoBounds, userDrawn) {
-      // adds location filter to locationFilterList
-      // userDrawn indicates if it comes from draw module (Leaflet) or dynamically from geoparsing (backend)
-      // note: Layer must be added to map before manually
-
-      if (this.locationFilterList.find((element) => element.id == id) !== undefined) {
-        // id is already in list
-        console.log("warning - cannot add filter with id: " + id + " because it is already present in filter list");
-        return;
-      }
-
-      // only allow bbox or polygon to be added to location filter list!
-      if (!['bbox', 'polygon'].includes(geoBounds.type)) {
-        // TODO automatically convert other types?
-        console.log("warning - unknown geoBounds type: " + geoBounds.type + "; cannot creaete location filter (addLocationFilter)");
-        return;
-      }
-      const filterObj = {
-        'id': id, 
-        'geoBounds': geoBounds, 
-        'userDrawn': userDrawn, 
-      }; 
-      this.locationFilterList.push(filterObj);
-    }, 
-    clearAllLocationFilters() {
-      this.locationFilterList = [];
-    },
-    addGeoparsingLocationFilters(locationResults) {
-      // adds location filter results from geoparsing location request
-      if (locationResults.length == 0) {
-        // no locations returned from geoparsing
-        return;
-      }
-      // TODO ask users for confirmation of locations
-
-      // create location filters in map and add to list
-      for (const locationObj of locationResults) {
-        // add filter for each found location
-        const bounds = locationObj[1];
-        const id = get_uid();
-        this.addLocationFilter(id, bounds, false);
-        // add layer to map
-        if (this.$refs.mapRef !== undefined) {
-          this.$refs.mapRef.addLocationFilterLayer(bounds);
-        }
-      }
-      // focus map
-      this.focusMapOnLocationFilters();
-
     }, 
     addTimeParsingFilters(timeResults) {
       if (timeResults.length == 0) {
@@ -315,22 +256,16 @@ export default {
       //console.log("end time was parsed as: " + timeResults[1]);
       this.timeRangeFilter = [startTime, endTime];
     }, 
-    focusMapOnLocationFilters() {
-      // focus map on existing location filters if they exist
+    focusMapOnLocations(locations) {
+      // focus map on a list of provided geobounds
+      this.initialFocusList = locations;
       if (this.$refs.mapRef == undefined) {
         // map does not exist, cannot focus
-        console.log("warning - map does not exist, therefore cannot focus on location filters (likely a startscreen problem)");
         return;
       }
-      let geoBoundsList = [];
-      for (const filterObj of this.locationFilterList) {
-        // add filter for each found location
-        const bounds = filterObj.geoBounds;
-        if (bounds != undefined) {
-          geoBoundsList.push(bounds);
-        }
+      else {
+        this.$refs.mapRef.focusMapOnLocationsList(locations);
       }
-      this.$refs.mapRef.focusMap(geoBoundsList);
     }, 
 
     // UI STATE METHODS
@@ -359,14 +294,13 @@ export default {
     }, 
   
     // BACKEND QUERY HELPER METHODS
-    getLocationFilterList() {
+    getLocationFilter() {
       // return a list of current location filters
-      let locationFilters = [];
-      for (const filter_obj of this.locationFilterList) {
-        // extract geographical information for stac item request
-        locationFilters.push(filter_obj.geoBounds);
+      if (this.$refs.mapRef == undefined) {
+        // cannot get location filter list if map does not exist
+        return null;
       }
-      return locationFilters;
+      return this.$refs.mapRef.getLocationFilter();
     }, 
     getTimeFilterList() {
       // return a list of current time filters
@@ -401,7 +335,13 @@ export default {
       }
       else {
         // TODO let users confirm locations and dates
-        this.addGeoparsingLocationFilters(analyzerQueryResult.data.locations);
+        let geoBoundsList = []
+        for (const locationTuple of analyzerQueryResult.data.locations) {
+          // const locationName = locationTuple[0];
+          const geoBounds = locationTuple[1];
+          geoBoundsList.push(geoBounds);
+        }
+        this.focusMapOnLocations(geoBoundsList);
         this.addTimeParsingFilters(analyzerQueryResult.data.dates);
         keywords = analyzerQueryResult.data.general_keywords;
       }
@@ -409,7 +349,6 @@ export default {
       // after setting analyzer results from Query Analyzer, continue with normal document query
       await this.makeDocumentQueryRequest(userQuery, keywords);
     }, 
-
     async makeDocumentQueryRequest(userQuery, keywords) {
       // TODO build in error handling
       const promises = []; 
@@ -455,9 +394,8 @@ export default {
         this.showMapAndList();        
       }
     }, 
-
-    validateParamsForStacItemQuery(stacCollectionId) {
-      if (this.locationFilterList.length == 0) {
+    validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter) {
+      if (locationFilter == null) {
         // abort query if no area is selected
         console.log("no filter area selected -> no STAC query possible");
         this.$toast.add({
@@ -470,7 +408,7 @@ export default {
         this.showAdvancedSearch = true;
         return false;
       }
-      if (this.timeRangeFilter.length == 0) {
+      if (timeFilter.length == 0) {
         // timeRange is not complete: ask user whether to continue
         const parent = this; // used to access 'this' in callback function
         this.$confirm.require({
@@ -480,7 +418,7 @@ export default {
           accept: function() {
             // clear time range 
             parent.timeRangeFilter = [];
-            parent.continueStackItemQuery(stacCollectionId);
+            parent.continueStackItemQuery(stacCollectionId, locationFilter, timeFilter);
           }, 
           reject: function() {
             parent.$toast.add({
@@ -498,19 +436,15 @@ export default {
       // continue with stac item query
       return true;
     }, 
-
-    async continueStackItemQuery(stacCollectionId) {
-      // TODO check if entry is already present
-      let locationFilters = this.getLocationFilterList();
-      let requestTimeFilter = this.getTimeFilterList();
+    async continueStackItemQuery(stacCollectionId, locationFilter, timeFilter) {
 
       // set loading True and selected False for all other entries
       if (!(stacCollectionId in this.permanentData.stac_collections)) {
         this.permanentData.stac_collections[stacCollectionId] = []; 
       }
       let stacRequest = {
-        'time_filter': requestTimeFilter, 
-        'location_filters': locationFilters, 
+        'time_filter': timeFilter, 
+        'location_filter': locationFilter, 
         'stac_items': [],
         'selected': false,
         'loading': true, 
@@ -519,7 +453,7 @@ export default {
       const stacRequestIdx = this.permanentData.stac_collections[stacCollectionId].length - 1; // idx of stac request
       let response = [];
       try {
-        response = await this.requestSTACItems(stacCollectionId, locationFilters, requestTimeFilter);
+        response = await this.requestSTACItems(stacCollectionId, locationFilter, timeFilter);
         response = response.data[1];
       }
       catch (err) {
@@ -538,23 +472,25 @@ export default {
         this.permanentData.stac_collections[stacCollectionId][stacRequestIdx].selected = true;
       }
     }, 
-
     async submitStacItemQuery(stacCollectionId) {
-      if (!this.validateParamsForStacItemQuery(stacCollectionId)) {
+      // get location and time filters
+      const locationFilter = this.getLocationFilter();
+      const timeFilter = this.getTimeFilterList();
+      const queryIsValid = this.validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter)
+      if (!queryIsValid) {
         // invalid query parameters
         console.log("invalid parameters for STAC query");
         return;
       }
       // continue with Stac item query 
-      this.continueStackItemQuery(stacCollectionId);
+      this.continueStackItemQuery(stacCollectionId, locationFilter, timeFilter);
     }, 
-
     async downloadSTACNotebook(stacCollectionId) {
-      let locationFilters = this.getLocationFilterList();
+      let locationFilter = this.getLocationFilter();
       let requestTimeFilter = this.getTimeFilterList();
       let response = [];
       try {
-        response = await this.requestSTACNotebook(stacCollectionId, locationFilters, requestTimeFilter);
+        response = await this.requestSTACNotebook(stacCollectionId, locationFilter, requestTimeFilter);
         // create blob file and trigger automatic download
         const blob = new Blob([response.data]);
         const link = document.createElement('a');
@@ -572,7 +508,6 @@ export default {
         console.log("STAC Notebook request finished!");
       }
     }, 
-
     async requestPublications(userQuery, keywords) {
       const path = '/pubRequest'
       const request = {
@@ -599,21 +534,21 @@ export default {
       };
       return axios.post(path, request);
     }, 
-    async requestSTACItems(stacCollectionId, locationFilters, timeInterval) {
+    async requestSTACItems(stacCollectionId, locationFilter, timeInterval) {
       const path = '/stacItemRequest';
       const request = {
         'collection_id': stacCollectionId, 
         'limit': 50, 
-        'location_filters': locationFilters, 
+        'location_filter': locationFilter, 
         'time_interval': timeInterval
       };
       return axios.post(path, request);
     }, 
-    async requestSTACNotebook(stacCollectionId, locationFilters, timeInterval) {
+    async requestSTACNotebook(stacCollectionId, locationFilter, timeInterval) {
       const path = '/notebookExportRequest';
       const request = {
         'collection_id': stacCollectionId, 
-        'location_filters': locationFilters, 
+        'location_filter': locationFilter, 
         'time_interval': timeInterval
       }; 
       return axios.post(path, request, {
@@ -627,7 +562,6 @@ export default {
       };
       return axios.post(path, request);
     }, 
-
     async requestGeotweets() { 
       const path = '/geotweetRequest';
       // TODO: get search parameters from user

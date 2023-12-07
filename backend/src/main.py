@@ -144,7 +144,7 @@ def make_stac_item_request(request: STACItemRequest, response: Response) -> tupl
     
     stac_items = data_retriever.make_stac_item_query(
         stac_collection_id=stac_collection_id, 
-        location_filters=request.location_filters, 
+        location_filter=request.location_filter, 
         time_interval=request.time_interval, 
         limit=request.limit, 
     )
@@ -162,7 +162,7 @@ def create_notebook_export(request: NotebookExportRequest, response: Response):
     
     filepath = data_retriever.create_notebook_export(
         stac_collection_id=stac_collection_id, 
-        location_filters=request.location_filters, 
+        location_filter=request.location_filter, 
         time_interval=request.time_interval, 
     )
     

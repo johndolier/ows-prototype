@@ -48,19 +48,19 @@ class DataRetriever:
             results = None
         return results
     
-    def make_stac_item_query(self, stac_collection_id:str, location_filters:list[dict], time_interval:list, limit:int = 100) -> list[dict]:
+    def make_stac_item_query(self, stac_collection_id:str, location_filter:list[dict], time_interval:list, limit:int = 100) -> list[dict]:
         # TODO find better request strategy for STAC items? 
         stac_source = self.__get_stac_source(stac_collection_id=stac_collection_id)
         api_link = self.stac_source_dict[stac_source]['api_link']
         catalog = self.__get_catalog(api_link)
         
-        location_filters = self.__get_geojson_from_location_filters(location_filters)
+        location_filter = self.__get_geojson_from_location_filters(location_filter)
         time_interval = self.__get_time_interval(time_interval)
         
         search_items = catalog.search(
             max_items = limit, 
             collections = stac_collection_id, 
-            intersects = location_filters, 
+            intersects = location_filter, 
             datetime = time_interval, 
         )
         search_items = list(search_items.items())
@@ -87,7 +87,7 @@ class DataRetriever:
             items_list.append(item_dict)
         return items_list
 
-    def create_notebook_export(self, stac_collection_id:str, location_filters:list[dict], time_interval:list) -> str:
+    def create_notebook_export(self, stac_collection_id:str, location_filter:list[dict], time_interval:list) -> str:
         ''' 
             This function parses the arguments and generates a Python notebook from a template file ('assets/STAC_notebook_template.ipynb')
             Placeholders get replaced by the specified arguments (STAC collection ID, location coordinates, time interval...)
@@ -97,7 +97,7 @@ class DataRetriever:
         api_link = self.stac_source_dict[stac_source]['api_link']
         
         # transform location filters (coordinates) and time interval
-        coordinates = self.__get_geojson_from_location_filters(location_filters)['coordinates']
+        coordinates = self.__get_geojson_from_location_filters(location_filter)['coordinates']
         time_interval = self.__get_time_interval(time_interval)        
             
         template_notebook = nbf.read('assets/STAC_notebook_template.ipynb', as_version=4)
@@ -337,40 +337,37 @@ class DataRetriever:
             catalog = pystac_client.Client.open(catalog_url)
         return catalog
 
-    def __get_geojson_from_location_filters(self, location_filters):
+    def __get_geojson_from_location_filters(self, location_filter):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO handle multiple different shapes
 
         coordinates = []
-        for filter in location_filters:
-            if filter['type'] == 'bbox':
-                bbox = filter['coords']
-                new_coord = [[
-                    [bbox[1], bbox[0]], 
-                    [bbox[3], bbox[0]], 
-                    [bbox[3], bbox[2]], 
-                    [bbox[1], bbox[2]], 
-                    [bbox[1], bbox[0]]
-                ]]
-            elif filter['type'] == 'polygon':
-                new_coord = []
-                for latlng_dict in filter['coords'][0]:
-                    lat = latlng_dict.get('lat')
-                    lng = latlng_dict.get('lng')
-                    new_coord.append([lng, lat])
-                    
-                # add first point to list to close the loop
-                last_lat = filter['coords'][0][0].get('lat')
-                last_lng = filter['coords'][0][0].get('lng')
-                new_coord.append([last_lng, last_lat])
+        if location_filter['type'] == 'bbox':
+            bbox = location_filter['coords']
+            new_coord = [
+                [bbox[1], bbox[0]], 
+                [bbox[3], bbox[0]], 
+                [bbox[3], bbox[2]], 
+                [bbox[1], bbox[2]], 
+                [bbox[1], bbox[0]]
+            ]
+        elif location_filter['type'] == 'polygon':
+            new_coord = []
+            for latlng_dict in location_filter['coords'][0]:
+                lat = latlng_dict.get('lat')
+                lng = latlng_dict.get('lng')
+                new_coord.append([lng, lat])
                 
-                # put coordinates in brackets for right format
-                new_coord = [new_coord]
-            else:
-                print(f"ERROR - unknown type {filter['type']}")
-                continue
-            coordinates.append(new_coord)
-        return geojson.MultiPolygon(coordinates)
+            # add first point to list to close the loop
+            last_lat = location_filter['coords'][0][0].get('lat')
+            last_lng = location_filter['coords'][0][0].get('lng')
+            new_coord.append([last_lng, last_lat])
+        else:
+            print(f"ERROR - unknown type {location_filter['type']}")
+            return None
+        
+        coordinates.append(new_coord)
+        return geojson.Polygon(coordinates)
 
     def __get_time_interval(self, time_interval:list):
         STR_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
