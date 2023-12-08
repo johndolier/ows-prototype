@@ -57,13 +57,13 @@
           <!--TODO find better way to dynamically show map and document list-->
           <DocumentListComponent v-if="[1,3].includes(viewMode)"
             :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
-            :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="permanentData.stac_collections" 
+            :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="stacItems" 
             @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
             class="document-list-component">
           </DocumentListComponent>
           <MapComponent v-if="[2,3].includes(viewMode)"
             class="map-component" ref="mapRef"
-            :documents="documents" :stacItems="permanentData.stac_collections" :initial-focus-list="initialFocusList"
+            :documents="documents" :stacItems="stacItems" :initial-focus-list="initialFocusList"
             @requestGeotweets="requestGeotweets" 
           />
         </div>
@@ -80,6 +80,8 @@ import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue
 import SearchHeaderComponent from '@/components/SearchHeaderComponent.vue';
 
 import axios from 'axios';
+
+import { v4 as get_uid } from 'uuid';
 
 export default {
   name: 'HomeView',
@@ -100,11 +102,8 @@ export default {
         'stac_collections': [], 
         'web_documents': [],
       }, 
-      // holds "permanent state" for each user session 
-      // for now, it consists of stac collections + items mainly
-      permanentData: {
-        'stac_collections': {}, 
-      }, 
+      // stacItems contain all the fetched STAC items frmo this user session
+      stacItems: {}, 
 
       // view control variables
       viewOptions: [
@@ -437,10 +436,9 @@ export default {
       return true;
     }, 
     async continueStackItemQuery(stacCollectionId, locationFilter, timeFilter) {
-
       // set loading True and selected False for all other entries
-      if (!(stacCollectionId in this.permanentData.stac_collections)) {
-        this.permanentData.stac_collections[stacCollectionId] = []; 
+      if (!(stacCollectionId in this.stacItems)) {
+        this.stacItems[stacCollectionId] = {}; 
       }
       let stacRequest = {
         'time_filter': timeFilter, 
@@ -449,8 +447,8 @@ export default {
         'selected': false,
         'loading': true, 
       };
-      this.permanentData.stac_collections[stacCollectionId].push(stacRequest);
-      const stacRequestIdx = this.permanentData.stac_collections[stacCollectionId].length - 1; // idx of stac request
+      const stacRequestUID = get_uid();
+      this.stacItems[stacCollectionId][stacRequestUID] = stacRequest;
       let response = [];
       try {
         response = await this.requestSTACItems(stacCollectionId, locationFilter, timeFilter);
@@ -463,13 +461,13 @@ export default {
       }
       finally {
         // set 'selected' false for all previous entries
-        for (const entry of this.permanentData.stac_collections[stacCollectionId]) {
-          entry.selected = false;
+        for (const entryUID in this.stacItems[stacCollectionId]) {
+          this.stacItems[stacCollectionId][entryUID].selected = false;
         }
         // set properties for new entry
-        this.permanentData.stac_collections[stacCollectionId][stacRequestIdx].stac_items = response;
-        this.permanentData.stac_collections[stacCollectionId][stacRequestIdx].loading = false;
-        this.permanentData.stac_collections[stacCollectionId][stacRequestIdx].selected = true;
+        this.stacItems[stacCollectionId][stacRequestUID].stac_items = response;
+        this.stacItems[stacCollectionId][stacRequestUID].loading = false;
+        this.stacItems[stacCollectionId][stacRequestUID].selected = true;
       }
     }, 
     async submitStacItemQuery(stacCollectionId) {
@@ -538,7 +536,7 @@ export default {
       const path = '/stacItemRequest';
       const request = {
         'collection_id': stacCollectionId, 
-        'limit': 50, 
+        'limit': 5, 
         'location_filter': locationFilter, 
         'time_interval': timeInterval
       };

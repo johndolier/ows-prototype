@@ -236,8 +236,12 @@ export default {
     stacItems: {
       handler() {
         this.clearSTACLayers();
-        for (const [stac_collection_id, entryList] of Object.entries(this.stacItems)) {
-          for (const entry of entryList) {
+        for (const stac_collection_id in this.stacItems) {
+          // entryList consists of all entries for a single stac collection
+          const entryList = this.stacItems[stac_collection_id];
+          for (const entryUID in entryList) {
+            // entry consists of one single request in that stac collection
+            const entry = entryList[entryUID];
             if (!entry.selected) {
               continue;
             }

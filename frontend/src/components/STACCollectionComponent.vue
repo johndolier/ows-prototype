@@ -56,7 +56,7 @@
         />
         <DataView 
           v-if="showItems" 
-          :value="stacItemList" 
+          :value="currentlySelectedSTACItems" 
           :layout="'grid'" 
           :rows="12"
           :paginator="true" 
@@ -98,7 +98,7 @@ export default {
     }, 
   props: {
     content: Object, 
-    stacItems: Object, 
+    globalSTACItems: Object, 
   }, 
   emits: ['submitStacItemQuery', 'downloadSTACNotebook'], 
 
@@ -109,47 +109,53 @@ export default {
   }, 
 
   computed: {
-    stacItemList() {
-      if (!this.stacItemsPresent) {
-        return [];
+    stacItems() {
+      // stacItems is a dictionary of STAC item requests performed on this STAC collection
+      if (this.content._id in this.globalSTACItems) {
+        return this.globalSTACItems[this.content._id];
       }
-      for (const entry of this.stacItems[this.content._id]) {
-        if (entry.selected) {
-          return entry['stac_items'];
-        }
+      else {
+        return null;
       }
-      return [];
-    }, 
+    },
     stacItemsLoading() {
-      if (!(this.content._id in this.stacItems)) {
-        // no entry with stac collection id
-        return false;
-      }
-      for (const entry of this.stacItems[this.content._id]) {
-        // return true if there is at least one entry where 'loading' is true
-        if (entry.loading) {
-          return true;
+      // returns true if any STAC items are loading
+      if (this.stacItems !== null) {
+        for (const entryUID in this.stacItems) {
+          if (this.stacItems[entryUID].loading) {
+            return true;
+          }
         }
       }
       return false;
     }, 
+    currentlySelectedResponse() {
+      // returns the current response that is selected (if there is one)
+      if (this.stacItems !== null) {
+        for (const entryUID in this.stacItems) {
+          if (this.stacItems[entryUID].selected) {
+            return this.stacItems[entryUID];
+          }
+        }
+      }
+      return null;
+    }, 
+    currentlySelectedSTACItems() {
+      // returns the STAC items that are currently selected
+      if (this.currentlySelectedResponse !== null) {
+        return this.currentlySelectedResponse.stac_items;
+      }
+      else {
+        return [];
+      }
+    }, 
     stacItemsPresent() {
-      // TODO adapt function to be correct!
-      if (!(this.content._id in this.stacItems)) {
-        return false;
-      }
-      const numEntries = this.stacItems[this.content._id].length;
-      if (numEntries <= 0) {
-        // no entries -> dont show stac items
-        return false;
-      }
-      else if (numEntries >= 2) {
-        // at least two entries -> always show stac items
+      // returns true if there are any STAC items selected
+      if (this.currentlySelectedResponse !== null) {
         return true;
       }
       else {
-        // exactly one entry -> check if entry is loading
-        return !this.stacItems[this.content._id][0].loading;
+        return false;
       }
     }
   }, 

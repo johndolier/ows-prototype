@@ -35,7 +35,7 @@
             <div v-else-if="slotProps.data[0] == 'stac_collection'">
               <STACCollectionComponent 
                 :content="slotProps.data[1]" 
-                :stacItems="stacItems"
+                :globalSTACItems="stacItems"
                 @submitStacItemQuery="submitStacItemQueryHandler" 
                 @downloadSTACNotebook="downloadSTACNotebookHandler"
                 class="element_card" 
