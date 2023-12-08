@@ -9,12 +9,16 @@
       </p>
       <div class="w-full block">
         <span class="inline w-full">
-          <Tag class="mx-2" value="Publication" severity="warning">
-          </Tag>
+          <Tag 
+            class="mx-2" 
+            value="Publication" 
+            severity="warning"
+          />
           <!-- TODO style keywords - make them clickable -->
-          <span v-for="keyword in content.keywords" :key="keyword" class="mx-1">
-          <Tag class="" :value="keyword">
-          </Tag>
+          <span 
+            v-for="keyword in content.keywords" :key="keyword" 
+            class="mx-1">
+          <Tag :value="keyword" />
           </span>
           <!-- TODO display EO objects -->
         </span>

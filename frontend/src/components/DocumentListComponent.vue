@@ -2,34 +2,50 @@
 <template>
   <div v-if="documentsPresent">
   <SelectButton 
-    v-model="typeSelected" :options="typeOptions" aria-labelledby="basic" multiple
-     class="w-full block float-left">
-  </SelectButton>
-  <DataView  :value="listDocuments" paginator :rows="10" class="w-full overflow-y-auto h-full">
+    v-model="typeSelected" 
+    :options="typeOptions" 
+    aria-labelledby="basic" 
+    multiple
+    class="w-full block float-left" 
+  />
+  <DataView 
+    :value="listDocuments" 
+    paginator :rows="10" 
+    class="w-full overflow-y-auto h-full"
+  >
     <template #list="slotProps">
       <div class="col-12">
         <div class="flex flex-column xl:flex-row xl:align-items-start p-4 gap-4">
           <div class="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
-            <div v-if="slotProps.data[0] == 'publication'" class="block w-full">
-              <PublicationComponent :content="slotProps.data[1]" 
-                class="element_card">
-              </PublicationComponent>
+            <div 
+              v-if="slotProps.data[0] == 'publication'" 
+              class="block w-full"
+            >
+              <PublicationComponent 
+                class="element_card" 
+                :content="slotProps.data[1]" 
+              />
             </div>
             <div v-else-if="slotProps.data[0] == 'web_document'">
-              <WebDocumentComponent :content="slotProps.data[1]" 
-                class="element_card">
-              </WebDocumentComponent>
+              <WebDocumentComponent 
+                class="element_card" 
+                :content="slotProps.data[1]" 
+              />
             </div>
             <div v-else-if="slotProps.data[0] == 'stac_collection'">
-              <STACCollectionComponent :content="slotProps.data[1]" :stacItems="stacItems"
-                @submitStacItemQuery="submitStacItemQueryHandler" @downloadSTACNotebook="downloadSTACNotebookHandler"
-                class="element_card">
-              </STACCollectionComponent>
+              <STACCollectionComponent 
+                :content="slotProps.data[1]" 
+                :stacItems="stacItems"
+                @submitStacItemQuery="submitStacItemQueryHandler" 
+                @downloadSTACNotebook="downloadSTACNotebookHandler"
+                class="element_card" 
+              />
             </div>
             <div v-else-if="slotProps.data[0] == 'stac_item'">
-              <STACItemComponent :content="slotProps.data[1]" 
-                class="element_card">
-              </STACItemComponent>
+              <STACItemComponent 
+                :content="slotProps.data[1]" 
+                class="element_card" 
+              />
             </div>
           </div>
         </div>

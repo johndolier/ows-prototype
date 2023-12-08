@@ -1,21 +1,31 @@
 <template>
   <div class="w-full">
     <SelectButton 
-      v-model="modeSelected" :options="modeOptions" aria-labelledby="basic"
-      @click="modeButtonClicked" class="w-full block float-left">
-    </SelectButton>
+      v-model="modeSelected" 
+      :options="modeOptions" 
+      aria-labelledby="basic"
+      @click="modeButtonClicked" 
+      class="w-full block float-left" 
+    />
     <OverlayPanel ref="op">
       <div v-if="modeSelected=='Coordinates'">
         <p class="font-italic">Select coordinates (coming soon)</p>
       </div>
       <div v-else-if="modeSelected=='Location'">
         <InputText 
-          v-model="locationInputText" v-on:keyup.enter="submitLocationQuery" 
-          type="text" size="small" placeholder="Search location..." class="inline" >
-        </InputText>
-        <PButton icon="pi pi-search" size="small" @click="submitQuery"
-          class="p-2 text-lg">
-        </PButton>
+          v-model="locationInputText" 
+          v-on:keyup.enter="submitLocationQuery" 
+          type="text" 
+          size="small" 
+          placeholder="Search location..." 
+          class="inline"
+        />
+        <PButton 
+          icon="pi pi-search" 
+          size="small" 
+          @click="submitQuery"
+          class="p-2 text-lg"
+        />
       </div>
     </OverlayPanel>
     <div v-if="locationSelected">

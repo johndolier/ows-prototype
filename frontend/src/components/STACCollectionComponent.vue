@@ -9,40 +9,66 @@
     <template #content>
       <div class="inline-block w-8 my-2 mx-3">
         <!--<span class="inline-block align-left w-8">-->
-        <Tag class="mx-2" value="STAC Collection" severity="warning">
-        </Tag>
+        <Tag 
+          class="mx-2" 
+          value="STAC Collection" 
+          severity="warning" 
+        />
         <!-- TODO style keywords - make them clickable -->
-        <span v-for="keyword in content.keywords" :key="keyword" class="mx-1">
-          <Tag class="" :value="keyword" >
-          </Tag>
+        <span 
+          v-for="keyword in content.keywords" :key="keyword" 
+          class="mx-1">
+          <Tag :value="keyword" />
         </span>
-        <p align="left" class="inline-block overflow-y-auto " v-html="content.description"></p>
+        <p 
+          align="left" 
+          class="inline-block overflow-y-auto " 
+          v-html="content.description">
+        </p>
         <!--</span>-->
       </div>
       <div class="inline-block w-3 mx-auto">
         <PButton 
-          label="Request STAC items" @click="submitStacItemQuery" size="small" severity="danger"
+          label="Request STAC items" 
+          @click="submitStacItemQuery" 
+          size="small" 
+          severity="danger"
           :loading="stacItemsLoading"
-          class="m-2">
-        </PButton>
+          class="m-2" 
+        />
         <PButton
-          label="STAC Download Notebook" @click="downloadSTACNotebook" size="small" severity="help" class="m-2 ">
-        </PButton>
+          label="STAC Download Notebook" 
+          @click="downloadSTACNotebook" 
+          size="small" 
+          severity="help" 
+          class="m-2" 
+        />
         <img class="thumbnail-img" 
           :src="content.assets.thumbnail.href"
         />
       </div>
       <div v-if="stacItemsPresent">
-        <PButton label="Show items" @click="showItemsClick" size="small" 
-          :icon="showItems ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " >
-        </PButton>
-        <DataView v-if="showItems" :value="stacItemList" :layout="'grid'" :rows="12"
-          :paginator="true" class="h-full">
+        <PButton 
+          label="Show items" 
+          @click="showItemsClick" 
+          size="small" 
+          :icon="showItems ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " 
+        />
+        <DataView 
+          v-if="showItems" 
+          :value="stacItemList" 
+          :layout="'grid'" 
+          :rows="12"
+          :paginator="true" 
+          class="h-full"
+        >
           <template #grid="slotProps">
             <div class="col-12 p-2 w-3">
               <div class="p-2 border-1 surface-border surface-card border-round">
-                <img v-if="slotProps.data.img_link" 
-                  class="stac-item-img" :src="slotProps.data.img_link" 
+                <img 
+                  v-if="slotProps.data.img_link" 
+                  class="stac-item-img" 
+                  :src="slotProps.data.img_link" 
                 />
                 <div v-else>
                   No image available

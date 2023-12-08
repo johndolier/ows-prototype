@@ -198,11 +198,11 @@ export default {
     }, 
     selectWebDocuments() {
       if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return false;
+        return true;
       }
       for (const selectedValue of this.selectedDatatypes) {
         if (selectedValue.code == 'web') {
-          return false;
+          return true;
         }
       }
       return false;

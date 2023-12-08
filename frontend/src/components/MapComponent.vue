@@ -1,21 +1,44 @@
 <template>
   <div class="h-full w-full mx-1 ">
     <div class="w-full my-2">
-      <PButton class="inline-flex mx-2 left-button" severity="info" size="small" label="SHOW GEOTWEETS"
-        @click="requestGeotweets">
-      </PButton>
-      <SplitButton class="inline-flex mx-2 left-button" severity="success" :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" label="SELECT AREA" 
-        @click="startDrawing" :model="drawItems">
-      </SplitButton>
-      <PButton v-if="isDrawing" class="inline-flex mx-2 left-button" severity="warning" size="small" label="STOP DRAWING"
-        @click="stopDrawing">
-      </PButton>
-      <PButton v-if="filterBounds" class="inline-flex mx-2 left-button" severity="warning" size="small" label="CLEAR FILTER"
-        @click="clearFilterLayer">
-      </PButton>
-      <PButton class="mx-5 w-2 right-button" severity="danger" size="small" icon="pi pi-trash" label="CLEAR MAP" 
-        @click="clearAllLayers">
-      </PButton>
+      <PButton 
+        class="inline-flex mx-2 left-button" 
+        severity="info" 
+        size="small" 
+        label="SHOW GEOTWEETS"
+        @click="requestGeotweets" 
+      />
+      <SplitButton 
+        class="inline-flex mx-2 left-button" 
+        severity="success" 
+        :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" 
+        :model="drawItems"
+        label="SELECT AREA" 
+        @click="startDrawing" 
+      />
+      <PButton 
+        v-if="isDrawing" class="inline-flex mx-2 left-button" 
+        severity="warning" 
+        size="small" 
+        label="STOP DRAWING"
+        @click="stopDrawing"
+      />
+      <PButton 
+        v-if="filterBounds" 
+        class="inline-flex mx-2 left-button" 
+        severity="warning" 
+        size="small" 
+        label="CLEAR FILTER"
+        @click="clearFilterLayer"
+      />
+      <PButton 
+        class="mx-5 w-2 right-button" 
+        severity="danger" 
+        size="small" 
+        icon="pi pi-trash" 
+        label="CLEAR MAP" 
+        @click="clearAllLayers"
+      />
     </div>
     <div id="mapContainer" class="">
     </div>
