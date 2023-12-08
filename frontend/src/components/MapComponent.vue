@@ -4,6 +4,15 @@
       <PButton class="inline-flex mx-2 left-button" severity="info" size="small" label="SHOW GEOTWEETS"
         @click="requestGeotweets">
       </PButton>
+      <SplitButton class="inline-flex mx-2 left-button" severity="success" :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" label="SELECT AREA" 
+        @click="startDrawing" :model="drawItems">
+      </SplitButton>
+      <PButton v-if="isDrawing" class="inline-flex mx-2 left-button" severity="warning" size="small" label="STOP DRAWING"
+        @click="stopDrawing">
+      </PButton>
+      <PButton v-if="filterBounds" class="inline-flex mx-2 left-button" severity="warning" size="small" label="CLEAR FILTER"
+        @click="clearFilterLayer">
+      </PButton>
       <PButton class="mx-5 w-2 right-button" severity="danger" size="small" icon="pi pi-trash" label="CLEAR MAP" 
         @click="clearAllLayers">
       </PButton>
@@ -44,15 +53,62 @@ export default {
       map: null,
       // map layers
       stacCollectionLayers: [],
+      drawnLayers: null, 
       // draw controller
       drawControl: null,
-      // polygonDrawer: null,
-      drawnLayers: null, 
-      filterBounds: null, 
+      polygonDrawer: null,
+      rectangleDrawer: null,
+      // filter bounds
+      filterBounds: null,
+      // UI state elements
+      isDrawing: false, 
+      polygonSelected: true, 
+      drawItems: [
+        {
+          label: 'Polygon',
+          icon: 'pi pi-caret-up',
+          command: () => {
+            this.polygonSelected = true;
+          }
+        },
+        {
+          label: 'Rectangle',
+          icon: 'pi pi-stop',
+          command: () => {
+            this.polygonSelected = false;
+          }
+        }
+      ] 
     }
   },
 
   methods: {
+    startPolygon() {
+      // start drawing a polygon
+      this.isDrawing = true;
+      this.polygonDrawer.enable();
+    },
+    startRectangle() {
+      // end drawing a polygon
+      this.isDrawing = true;
+      this.rectangleDrawer.enable();
+    },
+    startDrawing() {
+      // start drawing
+      this.isDrawing = true;
+      if (this.polygonSelected) {
+        this.polygonDrawer.enable();
+      }
+      else {
+        this.rectangleDrawer.enable();
+      }
+    }, 
+    stopDrawing() {
+      // stop drawing
+      this.polygonDrawer.disable();
+      this.rectangleDrawer.disable();
+      this.isDrawing = false;
+    }, 
     // custom buttons for map components
     clearAllLayers() {
       // remove filter areas
@@ -203,10 +259,10 @@ export default {
     this.drawControl = new L.Control.Draw({
       position: 'topright', 
       draw: {
-        polygon: true, 
+        polygon: false, 
         polyline: false, 
         circle: false, 
-        rectangle: true, 
+        rectangle: false, 
         marker: false, 
         circlemarker: false, 
       }, 
@@ -216,6 +272,10 @@ export default {
     });
     this.map.addControl(this.drawControl);
 
+    this.polygonDrawer = new L.Draw.Polygon(this.map);
+    this.rectangleDrawer = new L.Draw.Rectangle(this.map);
+
+    // add event listeners
     this.map.on(L.Draw.Event.DRAWSTART, () => {
       if (this.filterBounds !== null) {
         console.log("filter already exists - will be deleted now!");
@@ -224,8 +284,6 @@ export default {
     });
     
     this.map.on(L.Draw.Event.CREATED, e => {
-
-
 
       e.layer.setStyle({
         color: 'red', 
@@ -252,6 +310,7 @@ export default {
         return
       }
       this.drawnLayers.addLayer(e.layer);
+      this.isDrawing = false;
     });
     // set initial focus
     this.focusMapOnLocationsList(this.initialFocusList);

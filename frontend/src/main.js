@@ -30,6 +30,8 @@ import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
 import MultiSelect from 'primevue/multiselect';
 import Button from 'primevue/button';
+import SplitButton from 'primevue/splitbutton';
+
 //import Splitter from 'primevue/splitter';
 //import SplitterPanel from 'primevue/splitterpanel';
 import OverlayPanel from 'primevue/overlaypanel';
@@ -44,6 +46,7 @@ app.component('SelectButton', SelectButton);
 app.component('InputText', InputText);
 app.component('MultiSelect', MultiSelect);
 app.component('PButton', Button);
+app.component('SplitButton', SplitButton);
 //app.component('SplitterParent', Splitter);
 //app.component('SplitterPanel', SplitterPanel);
 app.component('OverlayPanel', OverlayPanel);
