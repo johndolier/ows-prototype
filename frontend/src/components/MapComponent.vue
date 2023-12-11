@@ -68,6 +68,7 @@ export default {
   inject: ['Utils'],
   emits: [
     'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
+    'STACItemClicked', // triggers highlighting of stac item in document list
   ], 
   components: {},
 
@@ -235,6 +236,7 @@ export default {
   watch: {
     stacItems: {
       handler() {
+        console.log("stac item re-rendering triggered!");
         this.clearSTACLayers();
         for (const stac_collection_id in this.stacItems) {
           // entryList consists of all entries for a single stac collection
@@ -247,15 +249,33 @@ export default {
             }
             // create layer for each entry
             const newFeatureGroup = new L.FeatureGroup();
-            const color = this.Utils.stringToColour(stac_collection_id);
+            // const color = this.Utils.stringToColour(stac_collection_id);
+            console.log(entry.highlightID);
             for (const stac_item of entry.stac_items) {
-              newFeatureGroup.addLayer(L.geoJSON(stac_item));
-            }
-            newFeatureGroup.setStyle(
-              function() {
-                return {color: color}
+              console.log(stac_item.id);
+              if (stac_item.id == entry.highlightID) {
+                console.log("highlighting stac item! " + stac_item.id);
               }
-            );
+              const layer = new L.GeoJSON(stac_item, {
+                style: {
+                  color: 'red', 
+                }
+              });
+              layer.on('click', (e) => {
+                const collection = e.propagatedFrom.feature.collection;
+                const id = e.propagatedFrom.feature.id;
+                this.$emit('STACItemClicked', collection, id);
+                e.layer.setStyle({
+                  color: 'blue', 
+                });
+              });
+              newFeatureGroup.addLayer(layer);
+            }
+            // newFeatureGroup.setStyle(
+            //   function() {
+            //     return {color: color}
+            //   }
+            // );
             this.stacCollectionLayers.push(newFeatureGroup);
             newFeatureGroup.addTo(this.map);  
           }

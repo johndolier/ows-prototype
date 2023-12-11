@@ -65,6 +65,7 @@
             class="map-component" ref="mapRef"
             :documents="documents" :stacItems="stacItems" :initial-focus-list="initialFocusList"
             @requestGeotweets="requestGeotweets" 
+            @STACItemClicked="STACItemClicked"
           />
         </div>
       </div>
@@ -266,6 +267,17 @@ export default {
         this.$refs.mapRef.focusMapOnLocationsList(locations);
       }
     }, 
+    // STAC item router methods
+    STACItemClicked(collection, stacItemId) {
+      // STAC item was clicked in map component
+      console.log("highlight STAC item triggered in HomeView");
+      console.log(collection);
+      console.log(stacItemId);
+      // set highlightID for all STAC items in this collection to null
+      for (const entryUID in this.stacItems[collection]) {
+        this.stacItems[collection][entryUID].highlightID = stacItemId;
+      }
+    },
 
     // UI STATE METHODS
     advancedSearchClick() {
@@ -443,9 +455,10 @@ export default {
       let stacRequest = {
         'time_filter': timeFilter, 
         'location_filter': locationFilter, 
-        'stac_items': [],
-        'selected': false,
+        'stac_items': [], 
+        'selected': false, 
         'loading': true, 
+        'highlightID': null, // if some STAC item is clicked, highlightID indicates which one
       };
       const stacRequestUID = get_uid();
       this.stacItems[stacCollectionId][stacRequestUID] = stacRequest;
