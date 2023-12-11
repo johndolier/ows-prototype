@@ -84,7 +84,7 @@ import axios from 'axios';
 import { v4 as get_uid } from 'uuid';
 
 export default {
-  
+
   name: 'HomeView',
 
   components: {
@@ -474,7 +474,7 @@ export default {
         return;
       }
       // debug
-      console.log(response.data);
+      // console.log(response.data);
 
       this.$refs.mapRef.showGeotweets(response.data);
     }, 

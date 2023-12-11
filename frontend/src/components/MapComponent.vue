@@ -53,6 +53,7 @@ import L from "leaflet";
 import 'leaflet-draw/dist/leaflet.draw.css';
 
 import { useScriptTag } from '@vueuse/core';
+
 useScriptTag('leaflet-heat.js');
 
 require('leaflet-draw');
@@ -77,6 +78,7 @@ export default {
       // map layers
       stacCollectionLayers: [],
       drawnLayers: null, 
+      heatLayer: null, 
       // draw controller
       drawControl: null,
       polygonDrawer: null,
@@ -141,6 +143,12 @@ export default {
       // TODO think of better way to store stac items and layers
       this.clearSTACLayers();
       this.stacCollectionLayers = [];
+
+      // remove heatmap layer
+      if (this.heatLayer !== null) {
+        this.map.removeLayer(this.heatLayer);
+      }
+      this.heatLayer = null;
     }, 
     clearSTACLayers() {
       for (const layer of this.stacCollectionLayers) {
@@ -202,11 +210,22 @@ export default {
       // display geotweets
       // var geojsonLayer = L.geoJSON().addTo(this.map);
       let tweetLatLongList = [];
+      // get center of point cloud
+      let xMean = 0;
+      let yMean = 0;
+      let count = 0;
       for (const tweet of geotweets) {
         // geojsonLayer.addData(tweet);
         tweetLatLongList.push(tweet.geometry.coordinates);
+        // add up point coordinates
+        xMean += tweet.geometry.coordinates[0];
+        yMean += tweet.geometry.coordinates[1];
+        count += 1;
       }
       this.addHeatMap(tweetLatLongList);
+      xMean /= count;
+      yMean /= count;
+      this.map.flyTo([xMean,yMean]);
     }, 
 
     addHeatMap(coordinateList) {
@@ -220,7 +239,7 @@ export default {
         const intensity = [coordinates[0], coordinates[1], 0.5];
         intensityList.push(intensity);
       }
-      L.heatLayer(
+      this.heatLayer = new L.heatLayer(
         intensityList, 
         {
           maxZoom: 3,
@@ -228,7 +247,9 @@ export default {
           //gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'}, 
           minOpacity: 0.3, 
         }
-        ).addTo(this.map);
+      );
+      this.heatLayer.addTo(this.map);
+
     }
   },
 
