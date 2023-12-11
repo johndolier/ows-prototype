@@ -97,7 +97,7 @@ class DataRetriever:
         api_link = self.stac_source_dict[stac_source]['api_link']
         
         # transform location filters (coordinates) and time interval
-        coordinates = self.__get_geojson_from_location_filters(location_filter)['coordinates']
+        coordinates = self.__get_geojson_from_location_filters(location_filter).get('coordinates') # can be None
         time_interval = self.__get_time_interval(time_interval)        
             
         template_notebook = nbf.read('assets/STAC_notebook_template.ipynb', as_version=4)
@@ -337,10 +337,13 @@ class DataRetriever:
             catalog = pystac_client.Client.open(catalog_url)
         return catalog
 
-    def __get_geojson_from_location_filters(self, location_filter):
+    def __get_geojson_from_location_filters(self, location_filter:dict):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO handle multiple different shapes
-
+        if not isinstance(location_filter, dict) or not location_filter:
+            # location filter is empty or not a dictionary!
+            return {}
+        
         coordinates = []
         if location_filter['type'] == 'bbox':
             bbox = location_filter['coords']

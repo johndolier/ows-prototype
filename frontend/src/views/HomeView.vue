@@ -385,10 +385,10 @@ export default {
     }, 
     async downloadSTACNotebook(stacCollectionId) {
       let locationFilter = this.getLocationFilter();
-      let requestTimeFilter = this.getTimeFilterList();
+      let timeFilter = this.getTimeFilterList();
       let response = [];
       try {
-        response = await this.requestSTACNotebook(stacCollectionId, locationFilter, requestTimeFilter);
+        response = await this.requestSTACNotebook(stacCollectionId, locationFilter, timeFilter);
         // create blob file and trigger automatic download
         const blob = new Blob([response.data]);
         const link = document.createElement('a');
