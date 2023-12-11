@@ -67,7 +67,7 @@ import STACItemComponent from './STACItemComponent.vue';
 import WebDocumentComponent from './WebDocumentComponent.vue';
 
 export default {
-  name: "DocumentList", 
+  name: "DocumentListComponent", 
   components: {
     PublicationComponent, 
     STACCollectionComponent, 

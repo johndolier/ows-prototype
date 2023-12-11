@@ -35,6 +35,8 @@ import Tag from 'primevue/tag';
 
 export default {
 
+  name: "PublicationComponent", 
+
   components: {
     Card, 
     Tag, 

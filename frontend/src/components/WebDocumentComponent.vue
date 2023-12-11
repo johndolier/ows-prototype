@@ -47,6 +47,9 @@ import Card from 'primevue/card';
 import Tag from 'primevue/tag';
 
 export default {
+
+  name: "WebDocumentComponent", 
+  
   components: {
     Card, 
     Tag, 

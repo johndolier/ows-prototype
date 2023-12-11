@@ -91,6 +91,8 @@ import Tag from 'primevue/tag';
 
 export default {
 
+  name: "STACCollectionComponent", 
+
   components: {
     Card,
     Tag,

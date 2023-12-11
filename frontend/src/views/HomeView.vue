@@ -84,7 +84,9 @@ import axios from 'axios';
 import { v4 as get_uid } from 'uuid';
 
 export default {
+  
   name: 'HomeView',
+
   components: {
     MapComponent,
     DocumentListComponent, 

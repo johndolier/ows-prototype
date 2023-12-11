@@ -40,6 +40,8 @@
 
 export default {
 
+  name: "LocationFilterComponent", 
+
   components: {},  
   emits: ['selectMapCoordinates'], 
   data () {
