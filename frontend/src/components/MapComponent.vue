@@ -5,7 +5,7 @@
         class="inline-flex mx-2 left-button" 
         severity="info" 
         size="small" 
-        label="SHOW GEOTWEETS"
+        label="SHOW GEOTWEETS (DEBUG)"
         @click="requestGeotweets" 
       />
       <SplitButton 

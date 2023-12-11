@@ -11,7 +11,7 @@
       <h2>
         Advanced Search
       </h2>
-      <div class="advanced-search-element">
+      <!-- <div class="advanced-search-element">
         <p align="left" class="advanced-search-header">Data types</p>
         <MultiSelect 
           v-model="selectedDatatypes" :options="dataTypes" optionLabel="name" placeholder="Select data types"
@@ -24,7 +24,7 @@
           @selectMapCoordinates="selectMapCoordinates"
           class="advanced-search-body"
         />
-      </div>
+      </div> -->
       <div class="advanced-search-element">
         <p align="left" class="advanced-search-header">Time Filter</p>
         <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
@@ -76,7 +76,7 @@
 // @ is an alias to /src
 import MapComponent from '@/components/MapComponent.vue';
 import DocumentListComponent from '@/components/DocumentListComponent.vue';
-import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue';
+// import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue';
 import SearchHeaderComponent from '@/components/SearchHeaderComponent.vue';
 
 import axios from 'axios';
@@ -88,7 +88,7 @@ export default {
   components: {
     MapComponent,
     DocumentListComponent, 
-    LocationFilterComponentVue, 
+    // LocationFilterComponentVue, 
     SearchHeaderComponent, 
   }, 
   // inject helper functions
@@ -121,28 +121,17 @@ export default {
       initialFocusList: null, 
       // advanced search
       showAdvancedSearch: false, 
-      // data types to select 
-      selectedDatatypes: [], 
-      dataTypes: [
-        {'name': 'Publications', 'code': 'pubs'}, 
-        {'name': 'STAC Collections', 'code': 'stac_collections'}, 
-        {'name': 'Web Data', 'code': 'web'}, 
-        {'name': 'STAC Items', 'code': 'stac_items'},      
-      ], 
+      // data types to include in DocumentListView
+      selectPublications: true, 
+      selectSTACCollections: true, 
+      selectSTACItems: true, 
+      selectWebDocuments: true, 
     }
   }, 
 
   async created() {
     this.keywords = await axios.get('/keywordRequest');
     //console.log("keywords fetched");
-  }, 
-
-  mounted() {
-    this.selectedDatatypes = [
-      //{'name': 'STAC Collections', 'code': 'stac_collections'}, 
-      //{'name': 'Publications', 'code': 'pubs'}, 
-    ]; 
-    //this.submitQuery().then(console.log("query loaded"));
   }, 
 
   computed: {
@@ -162,82 +151,10 @@ export default {
       // undefined
       return 4; 
     }, 
-    selectPublications() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'pubs') {
-          return true;
-        }
-      }
-      return false;
-    }, 
-    selectSTACCollections() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'stac_collections') {
-          return true;
-        }
-      }
-      return false;
-    }, 
-    selectSTACItems() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'stac_items') {
-          return true;
-        }
-      }
-      return false;
-    }, 
-    selectWebDocuments() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'web') {
-          return true;
-        }
-      }
-      return false;
-    }, 
   }, 
 
   methods: {
     // MAP COMPONENT METHODS
-    selectMapCoordinates() {
-      // enable filter area drawing in map component
-      // this.$toast.add({
-      //     severity: 'warn', 
-      //     summary: 'Select area', 
-      //     detail: 'Please select area in map for filtering', 
-      //     life: 5000, 
-      //     group: 'tc'
-      // });
-      // // close sidebar
-      // this.showAdvancedSearch = false;
-      // // show document body and map to select 
-      // this.showDocumentBody = true;
-      // this.showMap();
-
-      // // TODO wait until map is mounted! (implement correct function)
-      // function wait() {
-      //   console.log("waiting...");
-      // }
-      
-      // while (this.$refs.mapRef === undefined) {
-      //   console.log("set timeout");
-      //   setTimeout(wait, 1000);
-      // }
-      // // call selectCoordinates once the map is mounted
-      // this.$refs.mapRef.selectCoordinates();
-      console.log("not used anymore! (selectMapCoordinates)");
-    }, 
     addTimeParsingFilters(timeResults) {
       if (timeResults.length == 0) {
         // no time was parsed

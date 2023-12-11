@@ -5,7 +5,7 @@
     v-model="typeSelected" 
     :options="typeOptions" 
     aria-labelledby="basic" 
-    multiple
+    :allow-empty="false"
     class="w-full block float-left" 
   />
   <DataView 
@@ -84,8 +84,8 @@ export default {
   }, 
   data () {
     return {
-      typeSelected: ['STAC Collections'], 
-      typeOptions: ['STAC Collections', 'Publications', 'Web Documents', 'Social Media'], 
+      typeSelected: 'STAC Collections', 
+      typeOptions: ['Web Documents', 'Publications', 'STAC Collections'], 
     }
   }, 
 
@@ -138,7 +138,7 @@ export default {
       this.$emit('downloadSTACNotebook', args);
     }, 
   }, 
-}
+  }
 
 </script>
 
