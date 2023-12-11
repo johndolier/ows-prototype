@@ -412,7 +412,7 @@ class DataRetriever:
             print(f"error - could not load stac collection node with id {stac_collection_id}")
             return None
     
-    def __get_time_interval_source_code(time_interval:list) -> str:
+    def __get_time_interval_source_code(self, time_interval:list) -> str:
         return f"""
 date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
 time_start_str='{str(time_interval[0])}'
