@@ -3,7 +3,9 @@
 import './assets/main.css'
 
 import 'primeflex/primeflex.css'
-import "primevue/resources/themes/lara-light-indigo/theme.css";
+// set default theme
+// import "primevue/resources/themes/luna-pink/theme.css";
+import "primevue/resources/themes/lara-dark-purple/theme.css"
 import 'primeicons/primeicons.css';
 import '@vuepic/vue-datepicker/dist/main.css';
 
