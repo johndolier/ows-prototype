@@ -45,23 +45,23 @@
         @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
       />
       <div v-if="showDocumentBody" class="w-full z-1">
-        <div class="w-full py-2 my-1">
+        <!-- <div class="w-full py-2 my-1">
           <SelectButton 
             v-model="viewSelected" :options="viewOptions" optionValue="value" multiple aria-labelledby="multiple">
             <template #option="slotProps">
               <i :class="slotProps.option.icon"></i>
             </template>
           </SelectButton>
-        </div>
+        </div> -->
         <div class="w-screen h-screen flex">
           <!--TODO find better way to dynamically show map and document list-->
-          <DocumentListComponent v-if="[1,3].includes(viewMode)"
+          <DocumentListComponent
             :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
             :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="stacItems" 
             @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
             class="document-list-component">
           </DocumentListComponent>
-          <MapComponent v-if="[2,3].includes(viewMode)"
+          <MapComponent 
             class="map-component" ref="mapRef"
             :documents="documents" :stacItems="stacItems" :initial-focus-list="initialFocusList"
             @requestGeotweets="requestGeotweets" 
@@ -106,11 +106,11 @@ export default {
       stacItems: {}, 
 
       // view control variables
-      viewOptions: [
-        { icon: 'pi pi-bars', value: "List" },
-        { icon: 'pi pi-map', value: "Map" },
-      ],
-      viewSelected: ["Map"], 
+      // viewOptions: [
+      //   { icon: 'pi pi-bars', value: "List" },
+      //   { icon: 'pi pi-map', value: "Map" },
+      // ],
+      // viewSelected: ["Map"], 
       showDocumentBody: true, 
       showStartScreen: true, 
       // user input
@@ -132,25 +132,6 @@ export default {
   async created() {
     this.keywords = await axios.get('/keywordRequest');
     //console.log("keywords fetched");
-  }, 
-
-  computed: {
-    viewMode() {
-      if (this.viewSelected.includes("List") && this.viewSelected.includes("Map")) {
-        // split mode
-        return 3;
-      }
-      if (this.viewSelected.includes("List")) {
-        // list mode
-        return 1;
-      }
-      if (this.viewSelected.includes("Map")) {
-        // map mode
-        return 2;
-      }
-      // undefined
-      return 4; 
-    }, 
   }, 
 
   methods: {
@@ -189,25 +170,25 @@ export default {
       this.showAdvancedSearch = !this.showAdvancedSearch;
       //this.$refs.op.toggle(event);
     }, 
-    showMap(showOnly) {
-      if (showOnly) {
-        this.viewSelected = [];
-      }
-      if (!this.viewSelected.includes("Map")) {
-        this.viewSelected.push("Map");
-      }
-    }, 
-    showDocumentList(showOnly) {
-      if (showOnly) {
-        this.viewSelected = [];
-      }
-      if (!this.viewSelected.includes("List")) {
-        this.viewSelected.push("List");
-      }
-    }, 
-    showMapAndList() {
-      this.viewSelected = ["Map", "List"];
-    }, 
+    // showMap(showOnly) {
+    //   if (showOnly) {
+    //     this.viewSelected = [];
+    //   }
+    //   if (!this.viewSelected.includes("Map")) {
+    //     this.viewSelected.push("Map");
+    //   }
+    // }, 
+    // showDocumentList(showOnly) {
+    //   if (showOnly) {
+    //     this.viewSelected = [];
+    //   }
+    //   if (!this.viewSelected.includes("List")) {
+    //     this.viewSelected.push("List");
+    //   }
+    // }, 
+    // showMapAndList() {
+    //   this.viewSelected = ["Map", "List"];
+    // }, 
   
     // BACKEND QUERY HELPER METHODS
     getLocationFilter() {
@@ -307,7 +288,7 @@ export default {
         if (this.showStartScreen) {
           this.showStartScreen = false;
         }
-        this.showMapAndList();        
+        // this.showMapAndList();        
       }
     }, 
     validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter) {
@@ -495,16 +476,6 @@ export default {
 
       this.$refs.mapRef.showGeotweets(response.data);
     }, 
-  }, 
-
-  watch: {
-    viewMode() {
-      // this triggers a re-render of the map component in order to avoid issues with invalid leaflet map sizes
-      // see https://stackoverflow.com/questions/36246815/data-toggle-tab-does-not-download-leaflet-map/36257493#36257493
-      //console.log("triggered invalidate size");
-      window.dispatchEvent(new Event('resize'));
-      //this.$refs.mapRef.map.invalidateSize();
-    }
   }, 
 
 }
