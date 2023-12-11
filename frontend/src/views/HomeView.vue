@@ -1,8 +1,5 @@
 <template>
   <div class="home h-screen w-screen">
-        <div class="w-full text-xl font-bold text-primary py-2 my-1 bg-primary">
-      <header>OpenSearch@DLR Prototype</header>
-    </div>
     <PToast position="top-center" group="tc" />
     <PToast position="top-left" group="tl" />
     <ConfirmDialog></ConfirmDialog>
@@ -11,20 +8,6 @@
       <h2>
         Advanced Search
       </h2>
-      <!-- <div class="advanced-search-element">
-        <p align="left" class="advanced-search-header">Data types</p>
-        <MultiSelect 
-          v-model="selectedDatatypes" :options="dataTypes" optionLabel="name" placeholder="Select data types"
-          :maxSelectedLabels="3" class="advanced-search-body" panel-class="text-xs">
-        </MultiSelect>
-      </div>
-      <div class="advanced-search-element">
-        <p align="left" class="advanced-search-header">Location Filter</p>
-        <LocationFilterComponentVue 
-          @selectMapCoordinates="selectMapCoordinates"
-          class="advanced-search-body"
-        />
-      </div> -->
       <div class="advanced-search-element">
         <p align="left" class="advanced-search-header">Time Filter</p>
         <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
@@ -32,6 +15,9 @@
     </PSidebar>
 
     <div v-if="showStartScreen">
+      <div id="AppHeader" class="text-xl font-bold py-4 bg-primary">
+        <header>OpenSearch@DLR Prototype</header>
+      </div>
       <!-- START SCREEN -->
       <SearchHeaderComponent class="center"
       :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch" startText="Start your search here..." 
@@ -40,19 +26,11 @@
     </div>
     <div v-else>
       <!-- "NORMAL" SCREEN -->
-      <SearchHeaderComponent class="center-x"
+      <SearchHeaderComponent id="SearchHeader" class="center-x surface-ground z-1"
         :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch"
         @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
       />
-      <div v-if="showDocumentBody" class="w-full z-1">
-        <!-- <div class="w-full py-2 my-1">
-          <SelectButton 
-            v-model="viewSelected" :options="viewOptions" optionValue="value" multiple aria-labelledby="multiple">
-            <template #option="slotProps">
-              <i :class="slotProps.option.icon"></i>
-            </template>
-          </SelectButton>
-        </div> -->
+      <div id="DocumentBody" class="w-full surface-ground">
         <div class="w-screen h-screen flex">
           <!--TODO find better way to dynamically show map and document list-->
           <DocumentListComponent
@@ -113,7 +91,6 @@ export default {
       //   { icon: 'pi pi-map', value: "Map" },
       // ],
       // viewSelected: ["Map"], 
-      showDocumentBody: true, 
       showStartScreen: true, 
       // user input
       queryIsLoading: false,
@@ -281,10 +258,8 @@ export default {
             this.documents[key] = singleResponse.data[1];
           }
         }
-        this.showDocumentBody = true;
       } catch(err) {
         alert(err);
-        this.showDocumentBody = false;
       } finally {
         this.queryIsLoading = false;
         if (this.showStartScreen) {

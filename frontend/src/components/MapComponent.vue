@@ -13,11 +13,13 @@
         severity="success" 
         :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" 
         :model="drawItems"
+        size="small"
         label="SELECT AREA" 
         @click="startDrawing" 
       />
       <PButton 
-        v-if="isDrawing" class="inline-flex mx-2 left-button" 
+        v-if="isDrawing" 
+        class="inline-flex mx-2 left-button" 
         severity="warning" 
         size="small" 
         label="STOP DRAWING"
@@ -40,7 +42,7 @@
         @click="clearAllLayers"
       />
     </div>
-    <div id="mapContainer" class="">
+    <div id="mapContainer">
     </div>
   </div>
 </template>
