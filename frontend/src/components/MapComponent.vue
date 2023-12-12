@@ -183,6 +183,11 @@ export default {
       return this.filterBounds;
     }, 
     focusMapOnLocationsList(geoBoundsList) {
+      if (this.map == null) {
+        // map was not rendered yet
+        console.log("warning - map was not rendered yet; cannot focusMapOnLocationsList");
+        return;
+      }
       // focus map by using the center of the geobounds list
       if (geoBoundsList == null || geoBoundsList.length == 0) {
         // console.log("the geoBoundsList provided is null, cananot focus list");

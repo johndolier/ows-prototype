@@ -104,11 +104,11 @@
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
-              id="documentListComponent"
+              class="topResultListComponent"
               :documents="documents" 
               :stacItems="stacItems" 
               initial-document-type="STAC Collections"
-              :show-top-results-only="true"
+              :is-top-results-list="true"
               :search-query="lastUserQuery"
               @submitStacItemQuery="submitStacItemQuery" 
               @downloadSTACNotebook="downloadSTACNotebook"
@@ -117,11 +117,11 @@
           </div>
           <div v-if="showTopPublicationResults">
             <DocumentListComponent
-              id="documentListComponent"
+              class="topResultListComponent"
               :documents="documents" 
               :stacItems="stacItems" 
               initial-document-type="Publications"
-              :show-top-results-only="true"
+              :is-top-results-list="true"
               :search-query="lastUserQuery"
               @submitStacItemQuery="submitStacItemQuery" 
               @downloadSTACNotebook="downloadSTACNotebook"
@@ -239,6 +239,12 @@ export default {
     }, 
 
     // UI STATE METHODS
+    refreshUIAfterQuery() {
+      // hide map and show top results (should be called after a new query was fetched)
+      this.showMap = false;
+      this.showTopPublicationResults = true;
+      this.showTopSTACResults = true;
+    }, 
     showMapClicked() {
       this.showMap = !this.showMap;
     }, 
@@ -321,6 +327,8 @@ export default {
       // after setting analyzer results from Query Analyzer, continue with normal document query
       await this.makeDocumentQueryRequest(userQuery, keywords);
       this.lastUserQuery = userQuery;
+      // let "topResults" appear and hide map
+      this.refreshUIAfterQuery();
     }, 
     async makeDocumentQueryRequest(userQuery, keywords) {
       // TODO build in error handling
@@ -580,44 +588,51 @@ export default {
     width: 100%;
     margin-left: 1.0rem;
     margin-right: 0.5rem;
-
 }
 
 #mapComponent {
     /* height: 85vh; */
     width: 100%;
-    margin-right:1.0rem;
+    margin-left: auto;
+    margin-right:0.5rem;
     padding: 1.0rem;
 }
 
+.topResultListComponent {
+  width: 90%;
+  float: right;
+  /* margin-left: auto; */
+  margin-right: 0.5rem;
+}
+
 .advanced-search-element {
-    justify-content: start;
-    width: 100%;
-    height: auto;
+  justify-content: start;
+  width: 100%;
+  height: auto;
 
-    border-style: solid;
-    border-width: 1px;
-    border-radius: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 5px;
 
-    padding: 0.5rem;
-    margin-top: 0.25rem;
-    margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .advanced-search-header {
-    font-size: 0.75rem;
-    font-weight: bold;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
 .advanced-search-body {
-    font-size: 0.75rem;
-    position: relative;
-    display: inline-flex;
+  font-size: 0.75rem;
+  position: relative;
+  display: inline-flex;
 }
 
 .center-button {
-    margin:0 auto;
-    display: block;
+  margin:0 auto;
+  display: block;
 }
 
 .column {

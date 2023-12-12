@@ -9,12 +9,12 @@
       :allow-empty="false"
       class="w-full float-left my-2" 
     />
-    <div v-if="showTopResultsOnly"
+    <div v-if="isTopResultsList"
       class="w-full"
     >
-      <h3 class="inline-block">
+      <p class="inline-block">
         {{ topResultString }}
-      </h3>
+      </p>
       <PButton
         class="inline-block right-button"
         icon="pi pi-times-circle"
@@ -42,6 +42,7 @@
                 <PublicationComponent 
                   class="element-card" 
                   :content="slotProps.data[1]" 
+                  :normal-style="!isTopResultsList"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'web_document'">
@@ -54,6 +55,7 @@
                 <STACCollectionComponent 
                   :content="slotProps.data[1]" 
                   :globalSTACItems="stacItems"
+                  :normal-style="!isTopResultsList"
                   @submitStacItemQuery="submitStacItemQueryHandler" 
                   @downloadSTACNotebook="downloadSTACNotebookHandler"
                   class="element-card" 
@@ -97,8 +99,8 @@ export default {
     documents: Object,
     stacItems: Object,  
     initialDocumentType: String, 
-    showTopResultsOnly: Boolean, // indicates whether this type of DocumentList only shows a specific set of "Top results", rather than having full functionality
-    searchQuery: String, // indicates the search query that was used to generate the set of documents (relevant for showTopResultsOnly=true)
+    isTopResultsList: Boolean, // indicates whether this type of DocumentList only shows a specific set of "Top results", rather than having full functionality
+    searchQuery: String, // indicates the search query that was used to generate the set of documents (relevant for isTopResultsList=true)
   }, 
 
   emits: [
@@ -115,7 +117,7 @@ export default {
   computed: {
     allowSelection() {
       // selection is disabled when only showing top results
-      return !this.showTopResultsOnly;
+      return !this.isTopResultsList;
     }, 
     topResultString() {
       if (this.searchQuery == null) {
@@ -150,9 +152,9 @@ export default {
           return parseFloat(b[1].score) - parseFloat(a[1].score)
       });
 
-      // limit document number if showTopResultsOnly is enabled
-      const limit = 10;
-      if (this.showTopResultsOnly && documentList.length > limit) {
+      // limit document number if isTopResultsList is enabled
+      const limit = 5;
+      if (this.isTopResultsList && documentList.length > limit) {
         return documentList.slice(0,limit);
       }
       // otherwise, return whole list

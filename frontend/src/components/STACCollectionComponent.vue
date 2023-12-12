@@ -21,7 +21,7 @@
         </span>
         <p ref="descriptionRef"
           align="left" 
-          :class="showMore ? 'more-text' : 'less-text'"
+          :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
           v-html="content.description">
         </p>
         <PButton 
@@ -32,7 +32,7 @@
         />
       </div>
       <div class="w-3 right-block">
-        <PButton 
+        <PButton v-if="normalStyle"
           label="Request STAC items" 
           @click="submitStacItemQuery" 
           size="small" 
@@ -40,7 +40,7 @@
           :loading="stacItemsLoading"
           class="m-2" 
         />
-        <PButton
+        <PButton v-if="normalStyle"
           label="STAC Download Notebook" 
           @click="downloadSTACNotebook" 
           size="small" 
@@ -105,6 +105,7 @@ export default {
   props: {
     content: Object, 
     globalSTACItems: Object, 
+    normalStyle: Boolean, // this flag controls styling (can either be "normal" (true) or "small" style (false))
   }, 
   emits: ['submitStacItemQuery', 'downloadSTACNotebook'], 
 
@@ -181,7 +182,8 @@ export default {
     downloadSTACNotebook() {
       this.$emit('downloadSTACNotebook', this.content._id);
     }, 
-  }, 
+  },
+
   mounted() {
     // check if description text overflows the <p> element (with some margin)
     if (this.$refs.descriptionRef.scrollHeight > (this.$refs.descriptionRef.clientHeight + 5)) {
@@ -222,13 +224,15 @@ export default {
   display: inline-block;
 }
 
-.less-text {
-  /* display: block; */
-  /* text-overflow: ellipsis; */
-  /* word-wrap: break-word; */
+.no-text {
   overflow: hidden;
   line-height: 1em;
-  max-height: 20em;
+  max-height: 3em;
+}
+.less-text {
+  overflow: hidden;
+  line-height: 1em;
+  max-height: 10em;
 }
 
 .more-text {

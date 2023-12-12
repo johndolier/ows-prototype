@@ -1,7 +1,9 @@
 <template>
   <Card class="flex flex-column align-items-center sm:align-items-start gap-3">
     <template #title> 
-      {{ content.title }}
+      <div class="flex text-base">
+        {{ content.title }}
+      </div> 
     </template>
     <template #content>
       <div class="w-full">
@@ -21,7 +23,8 @@
         </span>
       </div>
       <p ref="abstractRef"
-        :class="showMore ? 'more-text' : 'less-text'"
+        align="left" 
+        :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
       >
         {{ content.abstract }}
       </p>
@@ -51,6 +54,7 @@ export default {
   }, 
   props: {
     content: Object, 
+    normalStyle: Boolean, // this flag controls styling (can either be "normal" (true) or "small" style (false))
   }, 
   
   data() {
@@ -78,6 +82,12 @@ export default {
 
 
 <style scoped>
+
+.no-text {
+  overflow: hidden;
+  line-height: 1em;
+  max-height: 3em;
+}
 
 .less-text {
   overflow: hidden;
