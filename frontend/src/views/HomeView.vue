@@ -86,11 +86,10 @@
           <DocumentListComponent
             id="documentListComponent"
             :documents="documents" 
-            :includeSTACCollections="selectSTACCollections" 
-            :includeSTACItems="selectSTACItems" 
-            :includePubs="selectPublications" 
-            :includeWebDocuments="selectWebDocuments" 
             :stacItems="stacItems" 
+            initial-document-type="STAC Collections"
+            :show-top-results-only="true"
+            :search-query="lastUserQuery"
             @submitStacItemQuery="submitStacItemQuery" 
             @downloadSTACNotebook="downloadSTACNotebook"
           >
@@ -140,32 +139,42 @@ export default {
       }, 
       // stacItems contain all the fetched STAC items frmo this user session
       stacItems: {}, 
+      // keywords: [], 
+
+      // last user query
+      lastUserQuery: null, 
 
       // view control variables
       // viewOptions: [
       //   { icon: 'pi pi-bars', value: "List" },
       //   { icon: 'pi pi-map', value: "Map" },
       // ],
-      // viewSelected: ["Map"], 
+      // viewSelected: ["Map"],
+
+      // UI STATE VARIABLES
       showStartScreen: true, 
       // user input
       queryIsLoading: false,
-      keywords: null, 
+      // advanced search
+      showAdvancedSearch: false, 
+      // control which elements are shown
+      showMap: true, 
+      showTopSTACResults: true, 
+      showTopPublicationResults: true, 
+
       // FILTERS
       timeRangeFilter: [], 
       initialFocusList: null, 
-      // advanced search
-      showAdvancedSearch: false, 
-      // data types to include in DocumentListView
+      // data types to include in DocumentListView (for now they are redundant and not used -> always true)
       selectPublications: true, 
       selectSTACCollections: true, 
-      selectSTACItems: true, 
       selectWebDocuments: true, 
     }
   }, 
 
   async created() {
-    this.keywords = await axios.get('/keywordRequest');
+    // currently keywords are not used ()
+    // this.keywords = await axios.get('/keywordRequest');
     //console.log("keywords fetched");
   }, 
 
@@ -217,25 +226,21 @@ export default {
       this.showAdvancedSearch = !this.showAdvancedSearch;
       //this.$refs.op.toggle(event);
     }, 
-    // showMap(showOnly) {
-    //   if (showOnly) {
-    //     this.viewSelected = [];
-    //   }
-    //   if (!this.viewSelected.includes("Map")) {
-    //     this.viewSelected.push("Map");
-    //   }
-    // }, 
-    // showDocumentList(showOnly) {
-    //   if (showOnly) {
-    //     this.viewSelected = [];
-    //   }
-    //   if (!this.viewSelected.includes("List")) {
-    //     this.viewSelected.push("List");
-    //   }
-    // }, 
-    // showMapAndList() {
-    //   this.viewSelected = ["Map", "List"];
-    // }, 
+    closeDocumentList(docListType) {
+      // this function is called when a DocumentList emits a 'closing' call
+      if (docListType == 'Publications') {
+        this.showTopPublicationResults = false;
+        return;
+      }
+      if (docListType == 'STAC Collections') {
+        this.showTopSTACResults = false;
+        return;
+      }
+      console.log("warning - closeDocumentList was emitted but docListType is not recognized: " + docListType);
+    }, 
+    minimizeMap() {
+      this.showMap = false;
+    }, 
   
     // BACKEND QUERY HELPER METHODS
     getLocationFilter() {
@@ -292,6 +297,7 @@ export default {
 
       // after setting analyzer results from Query Analyzer, continue with normal document query
       await this.makeDocumentQueryRequest(userQuery, keywords);
+      this.lastUserQuery = userQuery;
     }, 
     async makeDocumentQueryRequest(userQuery, keywords) {
       // TODO build in error handling
@@ -549,7 +555,7 @@ export default {
 
 #documentListComponent {
     display: inline-block;
-    min-width: 60%;
+    min-width: 50%;
     max-width: 100%;
     /*    
     width:60%;
@@ -558,9 +564,9 @@ export default {
 
 #mapComponent {
     display: inline-block;
-
-    min-width: 40%;
+    min-width: 50%;
     max-width: 100%;
+    padding: 1.0rem;
 }
 
 .advanced-search-element {

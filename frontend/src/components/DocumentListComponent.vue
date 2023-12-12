@@ -1,60 +1,79 @@
 
 <template>
-  <div v-if="documentsPresent">
-  <SelectButton 
-    v-model="typeSelected" 
-    :options="typeOptions" 
-    aria-labelledby="basic" 
-    :allow-empty="false"
-    class="w-full float-left my-2" 
-  />
-  <DataView 
-    :value="listDocuments" 
-    paginator :rows="10" 
-    class="w-full overflow-y-auto h-full"
-  >
-    <template #list="slotProps">
-      <div class="col-12">
-        <div class="flex flex-column xl:flex-row xl:align-items-start p-4 gap-4">
-          <div class="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
-            <div 
-              v-if="slotProps.data[0] == 'publication'" 
-              class="block w-full"
-            >
-              <PublicationComponent 
-                class="element-card" 
-                :content="slotProps.data[1]" 
-              />
-            </div>
-            <div v-else-if="slotProps.data[0] == 'web_document'">
-              <WebDocumentComponent 
-                class="element-card" 
-                :content="slotProps.data[1]" 
-              />
-            </div>
-            <div v-else-if="slotProps.data[0] == 'stac_collection'">
-              <STACCollectionComponent 
-                :content="slotProps.data[1]" 
-                :globalSTACItems="stacItems"
-                @submitStacItemQuery="submitStacItemQueryHandler" 
-                @downloadSTACNotebook="downloadSTACNotebookHandler"
-                class="element-card" 
-              />
-            </div>
-            <div v-else-if="slotProps.data[0] == 'stac_item'">
-              <STACItemComponent 
-                :content="slotProps.data[1]" 
-                class="element-card" 
-              />
+  <div>
+    <SelectButton 
+      v-if="allowSelection"
+      v-model="typeSelected" 
+      :options="typeOptions" 
+      aria-labelledby="basic" 
+      :allow-empty="false"
+      class="w-full float-left my-2" 
+    />
+    <div v-if="showTopResultsOnly"
+      class="w-full"
+    >
+      <h3 class="inline-block">
+        {{ topResultString }}
+      </h3>
+      <PButton
+        class="inline-block right-button"
+        icon="pi pi-times-circle"
+        severity="danger"
+        link
+        size="large"
+        @click="this.$emit('closeDocumentList', this.typeSelected)"
+      />
+    </div>
+
+    <div v-if="documentsPresent"> 
+    <DataView
+      :value="listDocuments" 
+      paginator :rows="10" 
+      class="w-full overflow-y-auto"
+    >
+      <template #list="slotProps">
+        <div class="col-12">
+          <div class="flex flex-column xl:flex-row xl:align-items-start p-4 gap-4">
+            <div class="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
+              <div 
+                v-if="slotProps.data[0] == 'publication'" 
+                class="block w-full"
+              >
+                <PublicationComponent 
+                  class="element-card" 
+                  :content="slotProps.data[1]" 
+                />
+              </div>
+              <div v-else-if="slotProps.data[0] == 'web_document'">
+                <WebDocumentComponent 
+                  class="element-card" 
+                  :content="slotProps.data[1]" 
+                />
+              </div>
+              <div v-else-if="slotProps.data[0] == 'stac_collection'">
+                <STACCollectionComponent 
+                  :content="slotProps.data[1]" 
+                  :globalSTACItems="stacItems"
+                  @submitStacItemQuery="submitStacItemQueryHandler" 
+                  @downloadSTACNotebook="downloadSTACNotebookHandler"
+                  class="element-card" 
+                />
+              </div>
+              <div v-else-if="slotProps.data[0] == 'stac_item'">
+                <STACItemComponent 
+                  :content="slotProps.data[1]" 
+                  class="element-card" 
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </template>
-  </DataView>
-  </div>
-  <div v-else>
-    <p>No documents present. Please enter query above</p>
+      </template>
+    </DataView>
+    </div>
+    <div v-else>
+      <p>No documents present. Please enter query above</p>
+    </div>
   </div>
 </template>
 
@@ -77,11 +96,15 @@ export default {
   props: {
     documents: Object,
     stacItems: Object,  
-    includeSTACCollections: Boolean, 
-    includePubs: Boolean, 
-    includeSTACItems: Boolean, 
-    includeWebDocuments: Boolean, 
+    initialDocumentType: String, 
+    showTopResultsOnly: Boolean, // indicates whether this type of DocumentList only shows a specific set of "Top results", rather than having full functionality
+    searchQuery: String, // indicates the search query that was used to generate the set of documents (relevant for showTopResultsOnly=true)
   }, 
+
+  emits: [
+    'closeDocumentList', 
+  ], 
+
   data () {
     return {
       typeSelected: 'STAC Collections', 
@@ -90,21 +113,31 @@ export default {
   }, 
 
   computed: {
+    allowSelection() {
+      // selection is disabled when only showing top results
+      return !this.showTopResultsOnly;
+    }, 
+    topResultString() {
+      if (this.searchQuery == null) {
+        return "Top " + this.typeSelected + " results";
+      }
+      return "Top " + this.typeSelected + " for '" + this.searchQuery + "'";
+    }, 
     listDocuments() {
       // parse all document types in single document list and sort by score value
       // filter out types that are not selected
       const documentList = [];
-      if (this.typeSelected.includes('STAC Collections')) {
+      if (this.typeSelected == 'STAC Collections') {
         for (const element of this.documents.stac_collections) {
           documentList.push(['stac_collection', element]);
         }
       }
-      if (this.typeSelected.includes('Web Documents')) {
+      if (this.typeSelected == 'Web Documents') {
         for (const element of this.documents.web_documents) {
           documentList.push(['web_document', element]);
         }
       }
-      if (this.typeSelected.includes('Publications')) { 
+      if (this.typeSelected == 'Publications') { 
         for (const element of this.documents.publications) {
           documentList.push(['publication', element]);
         }
@@ -133,7 +166,25 @@ export default {
       this.$emit('downloadSTACNotebook', args);
     }, 
   }, 
+
+  watch: {
+    typeSelected() {
+      if (!this.typeOptions.includes(this.typeSelected)) {
+        // unknown type was specified
+        console.log("warning - unknown type specified in DocumentList: " + this.typeSelected);
+        // default typeSelected
+        this.typeSelected = 'STAC Collections'; 
+      }
+    }, 
+  }, 
+
+  mounted() {
+    // init typeSelected with initial document type specified in parent component (if specified)
+    if (this.initialDocumentType != null) {
+      this.typeSelected = this.initialDocumentType;
+    }
   }
+}
 
 </script>
 
