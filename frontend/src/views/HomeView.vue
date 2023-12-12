@@ -51,7 +51,7 @@
 
     <div v-if="showStartScreen">
       <div 
-        id="AppHeader" 
+        id="appHeader" 
         class="text-xl font-bold py-4 bg-primary">
         <header>
           OpenSearch@DLR Prototype
@@ -70,7 +70,7 @@
     <div v-else>
       <!-- "NORMAL" SCREEN -->
       <SearchHeaderComponent 
-        id="SearchHeader" 
+        id="searchHeader" 
         class="center-x surface-ground z-1"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch"
@@ -78,12 +78,13 @@
         @advancedSearchClick="this.advancedSearchClick"
       />
       <div 
-        id="DocumentBody" 
+        id="documentBody" 
         class="w-full surface-ground"
       >
         <div class="w-screen h-screen flex">
           <!--TODO find better way to dynamically show map and document list-->
           <DocumentListComponent
+            id="documentListComponent"
             :documents="documents" 
             :includeSTACCollections="selectSTACCollections" 
             :includeSTACItems="selectSTACItems" 
@@ -92,11 +93,10 @@
             :stacItems="stacItems" 
             @submitStacItemQuery="submitStacItemQuery" 
             @downloadSTACNotebook="downloadSTACNotebook"
-            class="document-list-component"
           >
           </DocumentListComponent>
           <MapComponent 
-            class="map-component" 
+            id="mapComponent" 
             ref="mapRef"
             :documents="documents" 
             :stacItems="stacItems" 
@@ -112,7 +112,6 @@
 // @ is an alias to /src
 import MapComponent from '@/components/MapComponent.vue';
 import DocumentListComponent from '@/components/DocumentListComponent.vue';
-// import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue';
 import SearchHeaderComponent from '@/components/SearchHeaderComponent.vue';
 
 import axios from 'axios';
@@ -126,7 +125,6 @@ export default {
   components: {
     MapComponent,
     DocumentListComponent, 
-    // LocationFilterComponentVue, 
     SearchHeaderComponent, 
   }, 
   // inject helper functions
@@ -531,4 +529,69 @@ export default {
 }
 </script>
 
+<style scoped>
 
+#documentBody {
+    margin-top: 120px;
+}
+
+#appHeader {
+    position: fixed;
+    width: 100%; 
+    z-index: 1;
+    top: 0;
+}
+
+#searchHeader {
+    position: fixed;
+    top: 0;
+}
+
+#documentListComponent {
+    display: inline-block;
+    min-width: 60%;
+    max-width: 100%;
+    /*    
+    width:60%;
+    */
+}
+
+#mapComponent {
+    display: inline-block;
+
+    min-width: 40%;
+    max-width: 100%;
+}
+
+.advanced-search-element {
+    justify-content: start;
+    width: 100%;
+    height: auto;
+
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 5px;
+
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.advanced-search-header {
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.advanced-search-body {
+    font-size: 0.75rem;
+    position: relative;
+    display: inline-flex;
+}
+
+.center-button {
+    margin:0 auto;
+    display: block;
+}
+
+
+</style>

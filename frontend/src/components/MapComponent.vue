@@ -367,3 +367,19 @@ export default {
 };
 
 </script>
+
+
+<style scoped>
+
+#mapContainer {
+    height: 80%;
+    width: 90%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    z-index: 0;
+}
+
+</style>

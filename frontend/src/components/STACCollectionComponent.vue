@@ -177,3 +177,21 @@ export default {
 
 </script>
 
+
+<style scoped>
+
+.thumbnail-img {
+    width: 100%;
+    height: auto;
+    box-shadow: 2px;
+    border-radius: 0.25rem;
+}
+
+.stac-item-img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.1rem;
+    display: inline-block;
+}
+
+</style>

@@ -1,5 +1,5 @@
 <template>
-  <Card class="element_card flex flex-column align-items-center sm:align-items-start gap-3">
+  <Card class="element-card flex flex-column align-items-center sm:align-items-start gap-3">
     <template #title> 
       {{ content.title }}
     </template>

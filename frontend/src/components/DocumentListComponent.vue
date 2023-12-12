@@ -22,13 +22,13 @@
               class="block w-full"
             >
               <PublicationComponent 
-                class="element_card" 
+                class="element-card" 
                 :content="slotProps.data[1]" 
               />
             </div>
             <div v-else-if="slotProps.data[0] == 'web_document'">
               <WebDocumentComponent 
-                class="element_card" 
+                class="element-card" 
                 :content="slotProps.data[1]" 
               />
             </div>
@@ -38,13 +38,13 @@
                 :globalSTACItems="stacItems"
                 @submitStacItemQuery="submitStacItemQueryHandler" 
                 @downloadSTACNotebook="downloadSTACNotebookHandler"
-                class="element_card" 
+                class="element-card" 
               />
             </div>
             <div v-else-if="slotProps.data[0] == 'stac_item'">
               <STACItemComponent 
                 :content="slotProps.data[1]" 
-                class="element_card" 
+                class="element-card" 
               />
             </div>
           </div>

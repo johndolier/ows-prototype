@@ -1,6 +1,6 @@
 
 <template>
-  <Card class="element_card flex flex-column w-full">
+  <Card class="element-card flex flex-column w-full">
     <template #title>
       <PButton 
         v-if="content.is_html" 
