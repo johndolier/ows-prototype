@@ -122,6 +122,11 @@ nav a.router-link-exact-active {
     display: inline-flex;
 }
 
+.center-button {
+    margin:0 auto;
+    display: block;
+}
+
 .document-list-component {
     display: inline-block;
     min-width: 60%;

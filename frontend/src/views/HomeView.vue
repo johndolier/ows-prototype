@@ -31,6 +31,14 @@
           :partial-range="false" 
           class="advanced-search-body"
         />
+        <PButton 
+          v-if="timeSelected"
+          class="my-2 center-button"
+          severity="danger"
+          icon="pi pi-ban"
+          label="Clear Time Selection"
+          @click="clearTimeSelection" 
+        />
       </div>
       <PButton 
         v-if="!showStartScreen" 
@@ -163,6 +171,15 @@ export default {
     //console.log("keywords fetched");
   }, 
 
+  computed: {
+    timeSelected() {
+      if (this.timeRangeFilter == null || this.timeRangeFilter.length == 0) {
+        return false;
+      }
+      return true;
+    }
+  }, 
+
   methods: {
     // MAP COMPONENT METHODS
     addTimeParsingFilters(timeResults) {
@@ -195,6 +212,9 @@ export default {
     }, 
 
     // UI STATE METHODS
+    clearTimeSelection() {
+      this.timeRangeFilter = [];
+    }, 
     advancedSearchClick() {
       this.showAdvancedSearch = !this.showAdvancedSearch;
       //this.$refs.op.toggle(event);
