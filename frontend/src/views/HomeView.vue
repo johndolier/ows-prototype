@@ -77,30 +77,57 @@
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
       />
-      <div 
-        id="documentBody" 
-        class="w-full surface-ground"
-      >
-        <div class="w-screen h-screen flex">
-          <!--TODO find better way to dynamically show map and document list-->
+      <div id="documentBody" class=" surface-ground flex">
+        <div class="column">
+          <!-- left column -->
           <DocumentListComponent
             id="documentListComponent"
             :documents="documents" 
             :stacItems="stacItems" 
-            initial-document-type="STAC Collections"
-            :show-top-results-only="true"
+            initial-document-type="Web Documents"
+            :show-top-results-only="false"
             :search-query="lastUserQuery"
             @submitStacItemQuery="submitStacItemQuery" 
             @downloadSTACNotebook="downloadSTACNotebook"
-          >
-          </DocumentListComponent>
+          />
+        </div>
+        <div class="column">
+          <!-- right column -->
           <MapComponent 
             id="mapComponent" 
             ref="mapRef"
             :documents="documents" 
             :stacItems="stacItems" 
             :initial-focus-list="initialFocusList"
+            :show-map="showMap"
+            @show-map-clicked="showMapClicked"
           />
+          <div v-if="showTopSTACResults">
+            <DocumentListComponent
+              id="documentListComponent"
+              :documents="documents" 
+              :stacItems="stacItems" 
+              initial-document-type="STAC Collections"
+              :show-top-results-only="true"
+              :search-query="lastUserQuery"
+              @submitStacItemQuery="submitStacItemQuery" 
+              @downloadSTACNotebook="downloadSTACNotebook"
+              @close-document-list="closeDocumentList"
+           />
+          </div>
+          <div v-if="showTopPublicationResults">
+            <DocumentListComponent
+              id="documentListComponent"
+              :documents="documents" 
+              :stacItems="stacItems" 
+              initial-document-type="Publications"
+              :show-top-results-only="true"
+              :search-query="lastUserQuery"
+              @submitStacItemQuery="submitStacItemQuery" 
+              @downloadSTACNotebook="downloadSTACNotebook"
+              @close-document-list="closeDocumentList"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -144,13 +171,6 @@ export default {
       // last user query
       lastUserQuery: null, 
 
-      // view control variables
-      // viewOptions: [
-      //   { icon: 'pi pi-bars', value: "List" },
-      //   { icon: 'pi pi-map', value: "Map" },
-      // ],
-      // viewSelected: ["Map"],
-
       // UI STATE VARIABLES
       showStartScreen: true, 
       // user input
@@ -184,7 +204,7 @@ export default {
         return false;
       }
       return true;
-    }
+    }, 
   }, 
 
   methods: {
@@ -219,6 +239,9 @@ export default {
     }, 
 
     // UI STATE METHODS
+    showMapClicked() {
+      this.showMap = !this.showMap;
+    }, 
     clearTimeSelection() {
       this.timeRangeFilter = [];
     }, 
@@ -554,18 +577,16 @@ export default {
 }
 
 #documentListComponent {
-    display: inline-block;
-    min-width: 50%;
-    max-width: 100%;
-    /*    
-    width:60%;
-    */
+    width: 100%;
+    margin-left: 1.0rem;
+    margin-right: 0.5rem;
+
 }
 
 #mapComponent {
-    display: inline-block;
-    min-width: 50%;
-    max-width: 100%;
+    /* height: 85vh; */
+    width: 100%;
+    margin-right:1.0rem;
     padding: 1.0rem;
 }
 
@@ -597,6 +618,11 @@ export default {
 .center-button {
     margin:0 auto;
     display: block;
+}
+
+.column {
+  display: inline-block;
+  width: 50%;
 }
 
 

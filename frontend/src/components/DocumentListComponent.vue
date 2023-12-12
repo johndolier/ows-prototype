@@ -149,8 +149,13 @@ export default {
       documentList.sort(function(a,b) {
           return parseFloat(b[1].score) - parseFloat(a[1].score)
       });
-      // set documentsPresent variable
-      
+
+      // limit document number if showTopResultsOnly is enabled
+      const limit = 10;
+      if (this.showTopResultsOnly && documentList.length > limit) {
+        return documentList.slice(0,limit);
+      }
+      // otherwise, return whole list
       return documentList;
     }, 
     documentsPresent() {
