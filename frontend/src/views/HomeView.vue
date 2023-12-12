@@ -1,18 +1,39 @@
 <template>
   <div class="home h-screen w-screen">
-    <PToast position="top-center" group="tc" />
-    <PToast position="top-left" group="tl" />
-    <ConfirmDialog></ConfirmDialog>
+    <PToast 
+      position="top-center" 
+      group="tc" 
+    />
+    <PToast 
+      position="top-left" 
+      group="tl" 
+    />
+    <ConfirmDialog />
     <!-- Siebar component for advanced query and filtering documents -->
-    <PSidebar v-model:visible="showAdvancedSearch" position="left" :modal="false">
+    <PSidebar 
+      v-model:visible="showAdvancedSearch" 
+      position="left" 
+      :modal="false"
+    >
       <h2>
         Advanced Search
       </h2>
       <div class="advanced-search-element">
-        <p align="left" class="advanced-search-header">Time Filter</p>
-        <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
+        <p 
+          align="left" 
+          class="advanced-search-header"
+        >
+          Time Filter
+        </p>
+        <VueDatePicker 
+          v-model="timeRangeFilter" 
+          range 
+          :partial-range="false" 
+          class="advanced-search-body"
+        />
       </div>
-      <PButton v-if="!showStartScreen" 
+      <PButton 
+        v-if="!showStartScreen" 
         class="my-2" 
         severity="info" 
         label="SHOW GEOTWEETS (DEBUG)"
@@ -21,33 +42,57 @@
     </PSidebar>
 
     <div v-if="showStartScreen">
-      <div id="AppHeader" class="text-xl font-bold py-4 bg-primary">
-        <header>OpenSearch@DLR Prototype</header>
+      <div 
+        id="AppHeader" 
+        class="text-xl font-bold py-4 bg-primary">
+        <header>
+          OpenSearch@DLR Prototype
+        </header>
       </div>
       <!-- START SCREEN -->
-      <SearchHeaderComponent class="center"
-      :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch" startText="Start your search here..." 
-      @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
+      <SearchHeaderComponent 
+        class="center"
+        :queryIsLoading="queryIsLoading" 
+        :showAdvancedSearch="showAdvancedSearch" 
+        startText="Start your search here..." 
+        @submitQuery="this.submitQuery" 
+        @advancedSearchClick="this.advancedSearchClick"
       />
     </div>
     <div v-else>
       <!-- "NORMAL" SCREEN -->
-      <SearchHeaderComponent id="SearchHeader" class="center-x surface-ground z-1"
-        :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch"
-        @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
+      <SearchHeaderComponent 
+        id="SearchHeader" 
+        class="center-x surface-ground z-1"
+        :queryIsLoading="queryIsLoading" 
+        :showAdvancedSearch="showAdvancedSearch"
+        @submitQuery="this.submitQuery" 
+        @advancedSearchClick="this.advancedSearchClick"
       />
-      <div id="DocumentBody" class="w-full surface-ground">
+      <div 
+        id="DocumentBody" 
+        class="w-full surface-ground"
+      >
         <div class="w-screen h-screen flex">
           <!--TODO find better way to dynamically show map and document list-->
           <DocumentListComponent
-            :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
-            :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="stacItems" 
-            @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
-            class="document-list-component">
+            :documents="documents" 
+            :includeSTACCollections="selectSTACCollections" 
+            :includeSTACItems="selectSTACItems" 
+            :includePubs="selectPublications" 
+            :includeWebDocuments="selectWebDocuments" 
+            :stacItems="stacItems" 
+            @submitStacItemQuery="submitStacItemQuery" 
+            @downloadSTACNotebook="downloadSTACNotebook"
+            class="document-list-component"
+          >
           </DocumentListComponent>
           <MapComponent 
-            class="map-component" ref="mapRef"
-            :documents="documents" :stacItems="stacItems" :initial-focus-list="initialFocusList"
+            class="map-component" 
+            ref="mapRef"
+            :documents="documents" 
+            :stacItems="stacItems" 
+            :initial-focus-list="initialFocusList"
           />
         </div>
       </div>
@@ -109,7 +154,7 @@ export default {
       selectPublications: true, 
       selectSTACCollections: true, 
       selectSTACItems: true, 
-      selectWebDocuments: false, 
+      selectWebDocuments: true, 
     }
   }, 
 
