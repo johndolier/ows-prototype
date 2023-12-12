@@ -15,7 +15,6 @@ import axios from 'axios'
 
 
 import App from './App.vue'
-import router from './router'
 
 const app = createApp(App)
 
@@ -74,7 +73,11 @@ axios.defaults.withCredentials = true;
 // FastAPI backend
 const BACKEND_URL = "http://localhost:5000/"
 axios.defaults.baseURL = BACKEND_URL; 
-app.use(router);
+
+// disabled router; if enabled, uncomment these lines
+// import router from './router'
+// app.use(router);
+
 
 // inject utils 
 import HelperClass from './utils';
