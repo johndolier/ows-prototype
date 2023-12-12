@@ -1,13 +1,6 @@
 <template>
   <div class="h-full w-full mx-1 ">
     <div class="w-full my-2">
-      <PButton 
-        class="inline-flex mx-2 left-button" 
-        severity="info" 
-        size="small" 
-        label="SHOW GEOTWEETS (DEBUG)"
-        @click="requestGeotweets" 
-      />
       <SplitButton 
         class="inline-flex mx-2 left-button" 
         severity="success" 
@@ -70,7 +63,7 @@ export default {
   },
   inject: ['Utils'],
   emits: [
-    'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
+  //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
   components: {},
 

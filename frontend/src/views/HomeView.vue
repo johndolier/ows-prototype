@@ -12,6 +12,12 @@
         <p align="left" class="advanced-search-header">Time Filter</p>
         <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
       </div>
+      <PButton v-if="!showStartScreen" 
+        class="my-2" 
+        severity="info" 
+        label="SHOW GEOTWEETS (DEBUG)"
+        @click="requestGeotweets" 
+      />
     </PSidebar>
 
     <div v-if="showStartScreen">
@@ -42,7 +48,6 @@
           <MapComponent 
             class="map-component" ref="mapRef"
             :documents="documents" :stacItems="stacItems" :initial-focus-list="initialFocusList"
-            @requestGeotweets="requestGeotweets" 
           />
         </div>
       </div>
@@ -104,7 +109,7 @@ export default {
       selectPublications: true, 
       selectSTACCollections: true, 
       selectSTACItems: true, 
-      selectWebDocuments: true, 
+      selectWebDocuments: false, 
     }
   }, 
 
@@ -450,7 +455,10 @@ export default {
       }
       // debug
       // console.log(response.data);
-
+      if (this.$refs.mapRef == null) {
+        console.log("warning - cannot display geotweets because map was not created");
+        return;
+      }
       this.$refs.mapRef.showGeotweets(response.data);
     }, 
   }, 
