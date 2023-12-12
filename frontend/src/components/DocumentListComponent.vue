@@ -6,7 +6,7 @@
     :options="typeOptions" 
     aria-labelledby="basic" 
     :allow-empty="false"
-    class="w-full block float-left" 
+    class="w-full float-left my-2" 
   />
   <DataView 
     :value="listDocuments" 
@@ -112,7 +112,7 @@ export default {
       // TODO include STAC items / Social media
 
       // sort list and limit view
-      //const limitDoc = 10; // show only 10 documents for now#
+      //const limitDoc = 10; // show only 10 documents for now
       documentList.sort(function(a,b) {
           return parseFloat(b[1].score) - parseFloat(a[1].score)
       });
@@ -126,11 +126,6 @@ export default {
   }, 
 
   methods: {
-    openLink(link) {
-      console.log("open link...");
-      console.log(link);
-      window.open(link);
-    }, 
     submitStacItemQueryHandler(args) {
       this.$emit('submitStacItemQuery', args);
     }, 

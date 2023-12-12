@@ -19,16 +19,7 @@
       </PButton>
     </template>
     <template #content>
-      <p 
-        v-if="content.is_html" 
-        class="overflow-y-auto w-full" 
-        v-html="content.text"
-      >
-      </p>
-      <p v-else class="overflow-y-auto w-full">
-        {{ content.text }}
-      </p>
-      <div class="">
+      <div>
         <span class="w-full">
           <Tag 
             class="mx-2" 
@@ -37,6 +28,21 @@
           />
         </span>
       </div>
+      <p ref="contentRef"
+        v-if="content.is_html" 
+        :class="showMore ? 'more-text' : 'less-text'"
+        v-html="content.text"
+      >
+      </p>
+      <p v-else class="overflow-y-auto w-full">
+        {{ content.text }}
+      </p>
+      <PButton 
+        v-if="contentOverflown"
+        :label="showMore ? 'Show less' : 'Show more'"
+        link
+        @click="showMoreClicked"
+      />
     </template>
   </Card>     
 </template>
@@ -57,6 +63,53 @@ export default {
   props: {
     content: Object, 
   }, 
+
+  data() {
+    return {
+      contentOverflown: false,
+      showMore: false,
+    }
+  }, 
+
+  methods: {
+    openLink(link) {
+      try {
+        window.open(link);
+      } catch (err) {
+        console.log("error - could not open link");
+        console.log(err);
+      }
+    }, 
+    showMoreClicked() {
+      this.showMore = !this.showMore;
+    }
+  }, 
+
+  mounted() {
+    // check if content text overflows the <p> element (with some margin)
+      if (this.$refs.contentRef.scrollHeight > (this.$refs.contentRef.clientHeight + 5)) {
+      this.contentOverflown = true;
+    }
+  }
 }
 
 </script>
+
+
+<style scoped>
+
+.less-text {
+  width: 100%;
+  overflow: hidden;
+  line-height: 1em;
+  height: 5em;
+}
+
+.more-text {
+  width: 100%;
+  overflow: hidden;
+  line-height: 1em;
+  height: auto;
+}
+
+</style>

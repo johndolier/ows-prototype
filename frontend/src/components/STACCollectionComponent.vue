@@ -1,5 +1,5 @@
 <template>
-  <Card class="flex flex-column align-items-center sm:align-items-start gap-3 text-xs">
+  <Card class="flex flex-column align-items-center sm:align-items-start gap-3">
     <template #title>
       <!--TODO make title link (details view)-->
       <div class="flex text-base">
@@ -7,8 +7,7 @@
       </div> 
     </template>
     <template #content>
-      <div class="inline-block w-8 my-2 mx-3">
-        <!--<span class="inline-block align-left w-8">-->
+      <div class="w-8 mx-3 left-block">
         <Tag 
           class="mx-2" 
           value="STAC Collection" 
@@ -20,14 +19,19 @@
           class="mx-1">
           <Tag :value="keyword" />
         </span>
-        <p 
+        <p ref="descriptionRef"
           align="left" 
-          class="inline-block overflow-y-auto " 
+          :class="showMore ? 'more-text' : 'less-text'"
           v-html="content.description">
         </p>
-        <!--</span>-->
+        <PButton 
+          v-if="descriptionOverflow"
+          :label="showMore ? 'Show less' : 'Show more'"
+          link
+          @click="showMoreClicked"
+        />
       </div>
-      <div class="inline-block w-3 mx-auto">
+      <div class="w-3 right-block">
         <PButton 
           label="Request STAC items" 
           @click="submitStacItemQuery" 
@@ -107,6 +111,8 @@ export default {
   data() {
     return {
       showItems: false,
+      showMore: false,
+      descriptionOverflow: false, // is true when the description text overflows (computed at time of mount)
     }
   }, 
 
@@ -163,6 +169,9 @@ export default {
   }, 
 
   methods: {
+    showMoreClicked() {
+      this.showMore = !this.showMore;
+    }, 
     submitStacItemQuery() {
       this.$emit('submitStacItemQuery', this.content._id);
     }, 
@@ -173,6 +182,12 @@ export default {
       this.$emit('downloadSTACNotebook', this.content._id);
     }, 
   }, 
+  mounted() {
+    // check if description text overflows the <p> element (with some margin)
+    if (this.$refs.descriptionRef.scrollHeight > (this.$refs.descriptionRef.clientHeight + 5)) {
+      this.descriptionOverflow = true;
+    }
+  }
 }
 
 </script>
@@ -192,6 +207,34 @@ export default {
     height: auto;
     border-radius: 0.1rem;
     display: inline-block;
+}
+
+
+.left-block {
+  width: 67%;
+  vertical-align: top;
+  display: inline-block;
+}
+
+.right-block {
+  width: 33%;
+  vertical-align: top;
+  display: inline-block;
+}
+
+.less-text {
+  /* display: block; */
+  /* text-overflow: ellipsis; */
+  /* word-wrap: break-word; */
+  overflow: hidden;
+  line-height: 1em;
+  max-height: 20em;
+}
+
+.more-text {
+  overflow: hidden;
+  line-height: 1em;
+  height: auto;
 }
 
 </style>
