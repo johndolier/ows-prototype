@@ -122,6 +122,7 @@ export default {
   },
 
   methods: {
+    // LEAFLET DRAW FUNCTIONS
     startPolygon() {
       // start drawing a polygon
       this.isDrawing = true;
@@ -148,7 +149,7 @@ export default {
       this.rectangleDrawer.disable();
       this.isDrawing = false;
     }, 
-    // custom buttons for map components
+    // HANDLING LAYERS
     clearAllLayers() {
       // remove filter areas
       this.clearFilterLayer();
@@ -185,6 +186,16 @@ export default {
     }, 
     getLocationFilter() {
       return this.filterBounds;
+    }, 
+    // MAP UI FUNCTIONS
+    focusMapOnSTACLayer(stacCollectionID, requestUID) {
+      if (stacCollectionID in this.stacCollectionLayers && requestUID in this.stacCollectionLayers[stacCollectionID]) {
+        const featureGroup = this.stacCollectionLayers[stacCollectionID][requestUID];
+        this.map.fitBounds(featureGroup.getBounds());
+      }
+      else {
+        console.log("cannot find feature group for stacCollectionID " + stacCollectionID + " and requestUID " + requestUID);
+      }
     }, 
     focusMapOnLocationsList(geoBoundsList) {
       if (this.map == null) {

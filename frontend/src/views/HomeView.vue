@@ -89,6 +89,7 @@
             @submitStacItemQuery="submitStacItemQuery" 
             @downloadSTACNotebook="downloadSTACNotebook"
             @stacItemClicked="stacItemClicked"
+            @showSTACItemsOnMap="showSTACItemsOnMap"
           />
         </div>
         <div class="right-column">
@@ -244,6 +245,15 @@ export default {
       // set highlightID
       this.stacItems[stacCollectionID][requestUID].highlightID = stacItemID;
     },
+    showSTACItemsOnMap(stacCollectionID, requestUID) {
+      console.log("show stac items on map");
+      console.log(stacCollectionID);
+      console.log(requestUID);
+      this.focusOnMap();
+      if (this.$refs.mapRef !== undefined) {
+        this.$refs.mapRef.focusMapOnSTACLayer(stacCollectionID, requestUID);
+      }
+    }, 
 
     // UI STATE METHODS
     refreshUIAfterQuery() {
@@ -251,6 +261,13 @@ export default {
       this.showMap = false;
       this.showTopPublicationResults = true;
       this.showTopSTACResults = true;
+    }, 
+    focusOnMap() {
+      // sets showMap to true and scrolls to map element
+      this.showMap = true;
+      if (this.$refs.mapRef) {
+        this.$refs.mapRef.$el.scrollIntoView({behavior:'smooth'});
+      }
     }, 
     showMapClicked() {
       this.showMap = !this.showMap;
@@ -391,7 +408,6 @@ export default {
           life: 4000, 
           group: 'tc'
         });
-        this.showAdvancedSearch = true;
         return false;
       }
       if (timeFilter.length == 0) {

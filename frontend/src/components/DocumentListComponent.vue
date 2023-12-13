@@ -60,6 +60,7 @@
                   @submitStacItemQuery="submitStacItemQueryHandler" 
                   @downloadSTACNotebook="downloadSTACNotebookHandler"
                   @stacItemClicked="stacItemClicked"
+                  @showSTACItemsOnMap="showSTACItemsOnMap"
                   class="element-card" 
                 />
               </div>
@@ -110,6 +111,7 @@ export default {
     'downloadSTACNotebook',
     'closeDocumentList', 
     'stacItemClicked', 
+    'showSTACItemsOnMap', 
   ], 
 
   data () {
@@ -186,6 +188,9 @@ export default {
     stacItemClicked(stacCollectionID, requestUID, stacItemID) {
       this.$emit('stacItemClicked', stacCollectionID, requestUID, stacItemID);
     },
+    showSTACItemsOnMap(stacCollectionID, requestUID) {
+      this.$emit('showSTACItemsOnMap', stacCollectionID, requestUID);
+    }
   }, 
 
   watch: {

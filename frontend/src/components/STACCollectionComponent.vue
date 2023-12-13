@@ -52,18 +52,26 @@
         />
       </div>
       <div v-if="stacItemsPresent">
-        <PButton 
-          label="Show items" 
-          @click="showItemsClick" 
-          size="small" 
-          :icon="showItems ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " 
-        />
+        <div class="overflow-hidden">
+          <PButton 
+              class="items-button"
+              :label="'Show items (#' + currentlySelectedSTACItems.length + ')'" 
+              @click="showItemsClick" 
+              :icon="showItems ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " 
+            />
+            <PButton
+              class="map-button"
+              label="Show STAC Items on Map"
+              icon="pi pi-map"
+              @click="showSTACItemsOnMap"
+            />
+        </div>
         <DataView 
           v-if="showItems" 
           :value="currentlySelectedSTACItems" 
           :layout="'grid'" 
           :rows="12"
-          :paginator="true" 
+          :paginator="currentlySelectedSTACItems.length > 12" 
           class="h-full"
         >
           <template #grid="slotProps">
@@ -77,6 +85,7 @@
                   class="stac-item-img" 
                   :src="slotProps.data.img_link"
                   @click="onImageClick(slotProps.data)"
+                  @dblclick="showSTACItemsOnMap"
                 />
                 <div v-else>
                   No image available
@@ -114,7 +123,8 @@ export default {
   emits: [
     'submitStacItemQuery', 
     'downloadSTACNotebook', 
-    'stacItemClicked'
+    'stacItemClicked', 
+    'showSTACItemsOnMap', 
   ], 
 
   data() {
@@ -138,24 +148,30 @@ export default {
     stacItemsLoading() {
       // returns true if any STAC items are loading
       if (this.stacItems !== null) {
-        for (const entryUID in this.stacItems) {
-          if (this.stacItems[entryUID].loading) {
+        for (const requestUID in this.stacItems) {
+          if (this.stacItems[requestUID].loading) {
             return true;
           }
         }
       }
       return false;
     }, 
-    currentlySelectedRequest() {
+    currentlySelectedRequestUID() {
       // returns the current request item that is selected (if there is one)
       if (this.stacItems !== null) {
         for (const requestUID in this.stacItems) {
           if (this.stacItems[requestUID].selected) {
-            return this.stacItems[requestUID];
+            return requestUID;
           }
         }
       }
       return null;
+    }, 
+    currentlySelectedRequest() {
+      if (this.currentlySelectedRequestUID == null) {
+        return null;
+      }
+      return this.stacItems[this.currentlySelectedRequestUID];
     }, 
     currentlyHighlightedSTACItemID() {
       // returns the ID of the currently highlighted STAC item
@@ -185,7 +201,7 @@ export default {
       else {
         return false;
       }
-    }
+    }, 
   }, 
 
   methods: {
@@ -201,13 +217,17 @@ export default {
     downloadSTACNotebook() {
       this.$emit('downloadSTACNotebook', this.content._key);
     }, 
-
     onImageClick(stacItem) {
       const stacCollectionID = stacItem.collection;
       const stacItemID = stacItem.id;
       const requestUID = stacItem.requestUID;
       this.$emit('stacItemClicked', stacCollectionID, requestUID, stacItemID);
     },
+    showSTACItemsOnMap() {
+      const requestUID = this.currentlySelectedRequestUID;
+      const stacCollectionID = this.content._key;
+      this.$emit('showSTACItemsOnMap', stacCollectionID, requestUID);
+    }
   },
 
   mounted() {
@@ -271,6 +291,18 @@ export default {
   overflow: hidden;
   line-height: 1em;
   height: auto;
+}
+
+.map-button {
+  float: right;
+  padding: 5px;
+  margin: 3px;
+}
+
+.items-button {
+  float: left;
+  padding: 5px;
+  margin: 3px;
 }
 
 
