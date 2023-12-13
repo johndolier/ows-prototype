@@ -1,5 +1,5 @@
 <template>
-  <Card class="flex flex-column align-items-center sm:align-items-start gap-3 text-xs">
+  <Card class="flex flex-column align-items-center sm:align-items-start gap-3">
     <template #title>
       <!--TODO make title link (details view)-->
       <div class="flex text-base">
@@ -7,8 +7,7 @@
       </div> 
     </template>
     <template #content>
-      <div class="inline-block w-8 my-2 mx-3">
-        <!--<span class="inline-block align-left w-8">-->
+      <div class="w-8 mx-3 left-block">
         <Tag 
           class="mx-2" 
           value="STAC Collection" 
@@ -20,15 +19,20 @@
           class="mx-1">
           <Tag :value="keyword" />
         </span>
-        <p 
+        <p ref="descriptionRef"
           align="left" 
-          class="inline-block overflow-y-auto " 
+          :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
           v-html="content.description">
         </p>
-        <!--</span>-->
-      </div>
-      <div class="inline-block w-3 mx-auto">
         <PButton 
+          v-if="descriptionOverflow"
+          :label="showMore ? 'Show less' : 'Show more'"
+          link
+          @click="showMoreClicked"
+        />
+      </div>
+      <div class="w-3 right-block">
+        <PButton v-if="normalStyle"
           label="Request STAC items" 
           @click="submitStacItemQuery" 
           size="small" 
@@ -36,7 +40,7 @@
           :loading="stacItemsLoading"
           class="m-2" 
         />
-        <PButton
+        <PButton v-if="normalStyle"
           label="STAC Download Notebook" 
           @click="downloadSTACNotebook" 
           size="small" 
@@ -91,6 +95,8 @@ import Tag from 'primevue/tag';
 
 export default {
 
+  name: "STACCollectionComponent", 
+
   components: {
     Card,
     Tag,
@@ -99,12 +105,15 @@ export default {
   props: {
     content: Object, 
     globalSTACItems: Object, 
+    normalStyle: Boolean, // this flag controls styling (can either be "normal" (true) or "small" style (false))
   }, 
   emits: ['submitStacItemQuery', 'downloadSTACNotebook'], 
 
   data() {
     return {
       showItems: false,
+      showMore: false,
+      descriptionOverflow: false, // is true when the description text overflows (computed at time of mount)
     }
   }, 
 
@@ -161,6 +170,9 @@ export default {
   }, 
 
   methods: {
+    showMoreClicked() {
+      this.showMore = !this.showMore;
+    }, 
     submitStacItemQuery() {
       this.$emit('submitStacItemQuery', this.content._id);
     }, 
@@ -170,8 +182,63 @@ export default {
     downloadSTACNotebook() {
       this.$emit('downloadSTACNotebook', this.content._id);
     }, 
-  }, 
+  },
+
+  mounted() {
+    // check if description text overflows the <p> element (with some margin)
+    if (this.$refs.descriptionRef.scrollHeight > (this.$refs.descriptionRef.clientHeight + 5)) {
+      this.descriptionOverflow = true;
+    }
+  }
 }
 
 </script>
 
+
+<style scoped>
+
+.thumbnail-img {
+    width: 100%;
+    height: auto;
+    box-shadow: 2px;
+    border-radius: 0.25rem;
+}
+
+.stac-item-img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.1rem;
+    display: inline-block;
+}
+
+
+.left-block {
+  width: 67%;
+  vertical-align: top;
+  display: inline-block;
+}
+
+.right-block {
+  width: 33%;
+  vertical-align: top;
+  display: inline-block;
+}
+
+.no-text {
+  overflow: hidden;
+  line-height: 1em;
+  max-height: 3em;
+}
+.less-text {
+  overflow: hidden;
+  line-height: 1em;
+  max-height: 10em;
+}
+
+.more-text {
+  overflow: hidden;
+  line-height: 1em;
+  height: auto;
+}
+
+</style>

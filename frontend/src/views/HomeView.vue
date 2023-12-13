@@ -1,72 +1,131 @@
 <template>
   <div class="home h-screen w-screen">
-        <div class="w-full text-xl font-bold text-primary py-2 my-1 bg-primary">
-      <header>OpenSearch@DLR Prototype</header>
-    </div>
-    <PToast position="top-center" group="tc" />
-    <PToast position="top-left" group="tl" />
-    <ConfirmDialog></ConfirmDialog>
+    <PToast 
+      position="top-center" 
+      group="tc" 
+    />
+    <PToast 
+      position="top-left" 
+      group="tl" 
+    />
+    <ConfirmDialog />
     <!-- Siebar component for advanced query and filtering documents -->
-    <PSidebar v-model:visible="showAdvancedSearch" position="left" :modal="false">
+    <PSidebar 
+      v-model:visible="showAdvancedSearch" 
+      position="left" 
+      :modal="false"
+    >
       <h2>
         Advanced Search
       </h2>
       <div class="advanced-search-element">
-        <p align="left" class="advanced-search-header">Data types</p>
-        <MultiSelect 
-          v-model="selectedDatatypes" :options="dataTypes" optionLabel="name" placeholder="Select data types"
-          :maxSelectedLabels="3" class="advanced-search-body" panel-class="text-xs">
-        </MultiSelect>
-      </div>
-      <div class="advanced-search-element">
-        <p align="left" class="advanced-search-header">Location Filter</p>
-        <LocationFilterComponentVue 
-          @selectMapCoordinates="selectMapCoordinates"
+        <p 
+          align="left" 
+          class="advanced-search-header"
+        >
+          Time Filter
+        </p>
+        <VueDatePicker 
+          v-model="timeRangeFilter" 
+          range 
+          :partial-range="false" 
           class="advanced-search-body"
         />
+        <PButton 
+          v-if="timeSelected"
+          class="my-2 center-button"
+          severity="danger"
+          icon="pi pi-ban"
+          label="Clear Time Selection"
+          @click="clearTimeSelection" 
+        />
       </div>
-      <div class="advanced-search-element">
-        <p align="left" class="advanced-search-header">Time Filter</p>
-        <VueDatePicker v-model="timeRangeFilter" range :partial-range="false" class="advanced-search-body"/>
-      </div>
+      <PButton 
+        v-if="!showStartScreen" 
+        class="my-2" 
+        severity="info" 
+        label="SHOW GEOTWEETS (DEBUG)"
+        @click="requestGeotweets" 
+      />
     </PSidebar>
 
     <div v-if="showStartScreen">
+      <div 
+        id="appHeader" 
+        class="text-xl font-bold py-4 bg-primary">
+        <header>
+          OpenSearch@DLR Prototype
+        </header>
+      </div>
       <!-- START SCREEN -->
-      <SearchHeaderComponent class="center"
-      :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch" startText="Start your search here..." 
-      @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
+      <SearchHeaderComponent 
+        class="center"
+        :queryIsLoading="queryIsLoading" 
+        :showAdvancedSearch="showAdvancedSearch" 
+        startText="Start your search here..." 
+        @submitQuery="this.submitQuery" 
+        @advancedSearchClick="this.advancedSearchClick"
       />
     </div>
     <div v-else>
       <!-- "NORMAL" SCREEN -->
-      <SearchHeaderComponent class="center-x"
-        :queryIsLoading="queryIsLoading" :showAdvancedSearch="showAdvancedSearch"
-        @submitQuery="this.submitQuery" @advancedSearchClick="this.advancedSearchClick"
+      <SearchHeaderComponent 
+        id="searchHeader" 
+        class="center-x surface-ground z-1"
+        :queryIsLoading="queryIsLoading" 
+        :showAdvancedSearch="showAdvancedSearch"
+        @submitQuery="this.submitQuery" 
+        @advancedSearchClick="this.advancedSearchClick"
       />
-      <div v-if="showDocumentBody" class="w-full z-1">
-        <div class="w-full py-2 my-1">
-          <SelectButton 
-            v-model="viewSelected" :options="viewOptions" optionValue="value" multiple aria-labelledby="multiple">
-            <template #option="slotProps">
-              <i :class="slotProps.option.icon"></i>
-            </template>
-          </SelectButton>
-        </div>
-        <div class="w-screen h-screen flex">
-          <!--TODO find better way to dynamically show map and document list-->
-          <DocumentListComponent v-if="[1,3].includes(viewMode)"
-            :documents="documents" :includeSTACCollections="selectSTACCollections" :includeSTACItems="selectSTACItems" 
-            :includePubs="selectPublications" :includeWebDocuments="selectWebDocuments" :stacItems="stacItems" 
-            @submitStacItemQuery="submitStacItemQuery" @downloadSTACNotebook="downloadSTACNotebook"
-            class="document-list-component">
-          </DocumentListComponent>
-          <MapComponent v-if="[2,3].includes(viewMode)"
-            class="map-component" ref="mapRef"
-            :documents="documents" :stacItems="stacItems" :initial-focus-list="initialFocusList"
-            @requestGeotweets="requestGeotweets" 
-            @STACItemClicked="STACItemClicked"
+      <div id="documentBody" class=" surface-ground flex">
+        <div class="left-column">
+          <DocumentListComponent
+            id="documentListComponent"
+            :documents="documents" 
+            :stacItems="stacItems" 
+            initial-document-type="Web Documents"
+            :show-top-results-only="false"
+            :search-query="lastUserQuery"
+            @submitStacItemQuery="submitStacItemQuery" 
+            @downloadSTACNotebook="downloadSTACNotebook"
           />
+        </div>
+        <div class="right-column">
+          <MapComponent 
+            id="mapComponent" 
+            ref="mapRef"
+            :documents="documents" 
+            :stacItems="stacItems" 
+            :initial-focus-list="initialFocusList"
+            :show-map="showMap"
+            @show-map-clicked="showMapClicked"
+          />
+          <div v-if="showTopSTACResults">
+            <DocumentListComponent
+              class="topResultListComponent"
+              :documents="documents" 
+              :stacItems="stacItems" 
+              initial-document-type="STAC Collections"
+              :is-top-results-list="true"
+              :search-query="lastUserQuery"
+              @submitStacItemQuery="submitStacItemQuery" 
+              @downloadSTACNotebook="downloadSTACNotebook"
+              @close-document-list="closeDocumentList"
+           />
+          </div>
+          <div v-if="showTopPublicationResults">
+            <DocumentListComponent
+              class="topResultListComponent"
+              :documents="documents" 
+              :stacItems="stacItems" 
+              initial-document-type="Publications"
+              :is-top-results-list="true"
+              :search-query="lastUserQuery"
+              @submitStacItemQuery="submitStacItemQuery" 
+              @downloadSTACNotebook="downloadSTACNotebook"
+              @close-document-list="closeDocumentList"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -77,7 +136,6 @@
 // @ is an alias to /src
 import MapComponent from '@/components/MapComponent.vue';
 import DocumentListComponent from '@/components/DocumentListComponent.vue';
-import LocationFilterComponentVue from '@/components/LocationFilterComponent.vue';
 import SearchHeaderComponent from '@/components/SearchHeaderComponent.vue';
 
 import axios from 'axios';
@@ -85,11 +143,12 @@ import axios from 'axios';
 import { v4 as get_uid } from 'uuid';
 
 export default {
+
   name: 'HomeView',
+
   components: {
     MapComponent,
     DocumentListComponent, 
-    LocationFilterComponentVue, 
     SearchHeaderComponent, 
   }, 
   // inject helper functions
@@ -105,140 +164,49 @@ export default {
       }, 
       // stacItems contain all the fetched STAC items frmo this user session
       stacItems: {}, 
+      // keywords: [], 
 
-      // view control variables
-      viewOptions: [
-        { icon: 'pi pi-bars', value: "List" },
-        { icon: 'pi pi-map', value: "Map" },
-      ],
-      viewSelected: ["Map"], 
-      showDocumentBody: true, 
+      // last user query
+      lastUserQuery: null, 
+
+      // UI STATE VARIABLES
       showStartScreen: true, 
       // user input
       queryIsLoading: false,
-      keywords: null, 
+      // advanced search
+      showAdvancedSearch: false, 
+      // control which elements are shown
+      showMap: true, 
+      showTopSTACResults: true, 
+      showTopPublicationResults: true, 
+
       // FILTERS
       timeRangeFilter: [], 
       initialFocusList: null, 
-      // advanced search
-      showAdvancedSearch: false, 
-      // data types to select 
-      selectedDatatypes: [], 
-      dataTypes: [
-        {'name': 'Publications', 'code': 'pubs'}, 
-        {'name': 'STAC Collections', 'code': 'stac_collections'}, 
-        {'name': 'Web Data', 'code': 'web'}, 
-        {'name': 'STAC Items', 'code': 'stac_items'},      
-      ], 
+      // data types to include in DocumentListView (for now they are redundant and not used -> always true)
+      selectPublications: true, 
+      selectSTACCollections: true, 
+      selectWebDocuments: true, 
     }
   }, 
 
   async created() {
-    this.keywords = await axios.get('/keywordRequest');
+    // currently keywords are not used ()
+    // this.keywords = await axios.get('/keywordRequest');
     //console.log("keywords fetched");
   }, 
 
-  mounted() {
-    this.selectedDatatypes = [
-      //{'name': 'STAC Collections', 'code': 'stac_collections'}, 
-      //{'name': 'Publications', 'code': 'pubs'}, 
-    ]; 
-    //this.submitQuery().then(console.log("query loaded"));
-  }, 
-
   computed: {
-    viewMode() {
-      if (this.viewSelected.includes("List") && this.viewSelected.includes("Map")) {
-        // split mode
-        return 3;
+    timeSelected() {
+      if (this.timeRangeFilter == null || this.timeRangeFilter.length == 0) {
+        return false;
       }
-      if (this.viewSelected.includes("List")) {
-        // list mode
-        return 1;
-      }
-      if (this.viewSelected.includes("Map")) {
-        // map mode
-        return 2;
-      }
-      // undefined
-      return 4; 
-    }, 
-    selectPublications() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'pubs') {
-          return true;
-        }
-      }
-      return false;
-    }, 
-    selectSTACCollections() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'stac_collections') {
-          return true;
-        }
-      }
-      return false;
-    }, 
-    selectSTACItems() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'stac_items') {
-          return true;
-        }
-      }
-      return false;
-    }, 
-    selectWebDocuments() {
-      if (this.selectedDatatypes == null || !this.selectedDatatypes.length) {
-        return true;
-      }
-      for (const selectedValue of this.selectedDatatypes) {
-        if (selectedValue.code == 'web') {
-          return true;
-        }
-      }
-      return false;
+      return true;
     }, 
   }, 
 
   methods: {
     // MAP COMPONENT METHODS
-    selectMapCoordinates() {
-      // enable filter area drawing in map component
-      // this.$toast.add({
-      //     severity: 'warn', 
-      //     summary: 'Select area', 
-      //     detail: 'Please select area in map for filtering', 
-      //     life: 5000, 
-      //     group: 'tc'
-      // });
-      // // close sidebar
-      // this.showAdvancedSearch = false;
-      // // show document body and map to select 
-      // this.showDocumentBody = true;
-      // this.showMap();
-
-      // // TODO wait until map is mounted! (implement correct function)
-      // function wait() {
-      //   console.log("waiting...");
-      // }
-      
-      // while (this.$refs.mapRef === undefined) {
-      //   console.log("set timeout");
-      //   setTimeout(wait, 1000);
-      // }
-      // // call selectCoordinates once the map is mounted
-      // this.$refs.mapRef.selectCoordinates();
-      console.log("not used anymore! (selectMapCoordinates)");
-    }, 
     addTimeParsingFilters(timeResults) {
       if (timeResults.length == 0) {
         // no time was parsed
@@ -280,28 +248,36 @@ export default {
     },
 
     // UI STATE METHODS
+    refreshUIAfterQuery() {
+      // hide map and show top results (should be called after a new query was fetched)
+      this.showMap = false;
+      this.showTopPublicationResults = true;
+      this.showTopSTACResults = true;
+    }, 
+    showMapClicked() {
+      this.showMap = !this.showMap;
+    }, 
+    clearTimeSelection() {
+      this.timeRangeFilter = [];
+    }, 
     advancedSearchClick() {
       this.showAdvancedSearch = !this.showAdvancedSearch;
       //this.$refs.op.toggle(event);
     }, 
-    showMap(showOnly) {
-      if (showOnly) {
-        this.viewSelected = [];
+    closeDocumentList(docListType) {
+      // this function is called when a DocumentList emits a 'closing' call
+      if (docListType == 'Publications') {
+        this.showTopPublicationResults = false;
+        return;
       }
-      if (!this.viewSelected.includes("Map")) {
-        this.viewSelected.push("Map");
+      if (docListType == 'STAC Collections') {
+        this.showTopSTACResults = false;
+        return;
       }
+      console.log("warning - closeDocumentList was emitted but docListType is not recognized: " + docListType);
     }, 
-    showDocumentList(showOnly) {
-      if (showOnly) {
-        this.viewSelected = [];
-      }
-      if (!this.viewSelected.includes("List")) {
-        this.viewSelected.push("List");
-      }
-    }, 
-    showMapAndList() {
-      this.viewSelected = ["Map", "List"];
+    minimizeMap() {
+      this.showMap = false;
     }, 
   
     // BACKEND QUERY HELPER METHODS
@@ -359,6 +335,9 @@ export default {
 
       // after setting analyzer results from Query Analyzer, continue with normal document query
       await this.makeDocumentQueryRequest(userQuery, keywords);
+      this.lastUserQuery = userQuery;
+      // let "topResults" appear and hide map
+      this.refreshUIAfterQuery();
     }, 
     async makeDocumentQueryRequest(userQuery, keywords) {
       // TODO build in error handling
@@ -393,16 +372,14 @@ export default {
             this.documents[key] = singleResponse.data[1];
           }
         }
-        this.showDocumentBody = true;
       } catch(err) {
         alert(err);
-        this.showDocumentBody = false;
       } finally {
         this.queryIsLoading = false;
         if (this.showStartScreen) {
           this.showStartScreen = false;
         }
-        this.showMapAndList();        
+        // this.showMapAndList();        
       }
     }, 
     validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter) {
@@ -498,10 +475,10 @@ export default {
     }, 
     async downloadSTACNotebook(stacCollectionId) {
       let locationFilter = this.getLocationFilter();
-      let requestTimeFilter = this.getTimeFilterList();
+      let timeFilter = this.getTimeFilterList();
       let response = [];
       try {
-        response = await this.requestSTACNotebook(stacCollectionId, locationFilter, requestTimeFilter);
+        response = await this.requestSTACNotebook(stacCollectionId, locationFilter, timeFilter);
         // create blob file and trigger automatic download
         const blob = new Blob([response.data]);
         const link = document.createElement('a');
@@ -587,23 +564,96 @@ export default {
         return;
       }
       // debug
-      console.log(response.data);
-
+      // console.log(response.data);
+      if (this.$refs.mapRef == null) {
+        console.log("warning - cannot display geotweets because map was not created");
+        return;
+      }
       this.$refs.mapRef.showGeotweets(response.data);
     }, 
-  }, 
-
-  watch: {
-    viewMode() {
-      // this triggers a re-render of the map component in order to avoid issues with invalid leaflet map sizes
-      // see https://stackoverflow.com/questions/36246815/data-toggle-tab-does-not-download-leaflet-map/36257493#36257493
-      //console.log("triggered invalidate size");
-      window.dispatchEvent(new Event('resize'));
-      //this.$refs.mapRef.map.invalidateSize();
-    }
   }, 
 
 }
 </script>
 
+<style scoped>
 
+#documentBody {
+    margin-top: 120px;
+}
+
+#appHeader {
+    position: fixed;
+    width: 100%; 
+    z-index: 1;
+    top: 0;
+}
+
+#searchHeader {
+    position: fixed;
+    top: 0;
+}
+
+#documentListComponent {
+    width: 100%;
+    margin-left: 1.0rem;
+    margin-right: 0.5rem;
+}
+
+#mapComponent {
+    /* height: 85vh; */
+    width: 100%;
+    margin-left: auto;
+    margin-right:0.5rem;
+    padding: 1.0rem;
+}
+
+.topResultListComponent {
+  width: 90%;
+  float: right;
+  /* margin-left: auto; */
+  margin-right: 0.5rem;
+}
+
+.advanced-search-element {
+  justify-content: start;
+  width: 100%;
+  height: auto;
+
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 5px;
+
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.advanced-search-header {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.advanced-search-body {
+  font-size: 0.75rem;
+  position: relative;
+  display: inline-flex;
+}
+
+.center-button {
+  margin:0 auto;
+  display: block;
+}
+
+.left-column {
+  display: inline-block;
+  width: 55%;
+}
+
+.right-column {
+  display: inline-block;
+  width: 45%;
+}
+
+
+</style>

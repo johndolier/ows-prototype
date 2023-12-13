@@ -97,7 +97,7 @@ class DataRetriever:
         api_link = self.stac_source_dict[stac_source]['api_link']
         
         # transform location filters (coordinates) and time interval
-        coordinates = self.__get_geojson_from_location_filters(location_filter)['coordinates']
+        coordinates = self.__get_geojson_from_location_filters(location_filter).get('coordinates') # can be None
         time_interval = self.__get_time_interval(time_interval)        
             
         template_notebook = nbf.read('assets/STAC_notebook_template.ipynb', as_version=4)
@@ -130,17 +130,18 @@ class DataRetriever:
         '''
         # TODO automatically get connected eo missions/instruments
 
-        # for now, keyword list are used to retrieve stac collections
-        keyword_query = ''
-        for word in keywords:
-            keyword_query += f"{word} "
-        keyword_query = keyword_query.strip()
+        # alternatively, we can use the keywords to form a query (location and time is evicted from this query)
+        # query = ''
+        # for word in keywords:
+        #     query += f"{word} "
+        # query = query.strip()
+        
 
         model = SentenceTransformer('msmarco-distilbert-base-v4')
-        keyword_query_emb = model.encode(keyword_query).tolist()
+        query_embedding = model.encode(query).tolist()
         query_params = {
             #'query': keyword_query, 
-            'query_embedding': keyword_query_emb,  
+            'query_embedding': query_embedding,  
             #'limit': limit, 
             'sim_threshold': 0.1, 
         }
@@ -188,16 +189,16 @@ class DataRetriever:
         '''
             Makes query on arangodb to retrieve publications that match the query
         '''
-        # for now, keyword list are used to retrieve stac collections
-        keyword_query = ''
-        for word in keywords:
-            keyword_query += f"{word} "
-        keyword_query = keyword_query.strip()
+        # alternatively, we can use the keywords to form a query (location and time is evicted from this query)
+        # query = ''
+        # for word in keywords:
+        #     query += f"{word} "
+        # query = query.strip()
         
         #model = SentenceTransformer('msmarco-distilbert-base-v4')
         #query_emb = model.encode(query).tolist()
         query_params = {
-            'query': keyword_query,
+            'query': query,
             #'query_embedding': query_emb,  
             'sim_score': 0.9, 
         }
@@ -337,10 +338,13 @@ class DataRetriever:
             catalog = pystac_client.Client.open(catalog_url)
         return catalog
 
-    def __get_geojson_from_location_filters(self, location_filter):
+    def __get_geojson_from_location_filters(self, location_filter:dict):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO handle multiple different shapes
-
+        if not isinstance(location_filter, dict) or not location_filter:
+            # location filter is empty or not a dictionary!
+            return {}
+        
         coordinates = []
         if location_filter['type'] == 'bbox':
             bbox = location_filter['coords']
@@ -412,7 +416,7 @@ class DataRetriever:
             print(f"error - could not load stac collection node with id {stac_collection_id}")
             return None
     
-    def __get_time_interval_source_code(time_interval:list) -> str:
+    def __get_time_interval_source_code(self, time_interval:list) -> str:
         return f"""
 date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
 time_start_str='{str(time_interval[0])}'

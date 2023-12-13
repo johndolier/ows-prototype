@@ -3,7 +3,9 @@
 import './assets/main.css'
 
 import 'primeflex/primeflex.css'
-import "primevue/resources/themes/lara-light-indigo/theme.css";
+// set default theme
+// import "primevue/resources/themes/lara-light-indigo/theme.css";
+import "primevue/resources/themes/lara-dark-purple/theme.css"
 import 'primeicons/primeicons.css';
 import '@vuepic/vue-datepicker/dist/main.css';
 
@@ -13,7 +15,6 @@ import axios from 'axios'
 
 
 import App from './App.vue'
-import router from './router'
 
 const app = createApp(App)
 
@@ -28,7 +29,7 @@ app.use(PrimeVue)
 // add primevue components
 import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
-import MultiSelect from 'primevue/multiselect';
+// import MultiSelect from 'primevue/multiselect';
 import Button from 'primevue/button';
 import SplitButton from 'primevue/splitbutton';
 
@@ -44,7 +45,7 @@ import ConfirmDialog from 'primevue/confirmdialog';
 
 app.component('SelectButton', SelectButton);
 app.component('InputText', InputText);
-app.component('MultiSelect', MultiSelect);
+// app.component('MultiSelect', MultiSelect);
 app.component('PButton', Button);
 app.component('SplitButton', SplitButton);
 //app.component('SplitterParent', Splitter);
@@ -72,7 +73,11 @@ axios.defaults.withCredentials = true;
 // FastAPI backend
 const BACKEND_URL = "http://localhost:5000/"
 axios.defaults.baseURL = BACKEND_URL; 
-app.use(router);
+
+// disabled router; if enabled, uncomment these lines
+// import router from './router'
+// app.use(router);
+
 
 // inject utils 
 import HelperClass from './utils';
