@@ -28,7 +28,8 @@
     <div v-if="documentsPresent"> 
     <DataView
       :value="listDocuments" 
-      paginator :rows="10" 
+      :paginator="!isTopResultsList"
+      :rows="10" 
       class="w-full overflow-y-auto"
     >
       <template #list="slotProps">
@@ -74,7 +75,7 @@
     </DataView>
     </div>
     <div v-else>
-      <p>No documents present. Please enter query above</p>
+      <p>{{foundNoQueryString}}</p>
     </div>
   </div>
 </template>
@@ -124,6 +125,12 @@ export default {
         return "Top " + this.typeSelected + " results";
       }
       return "Top " + this.typeSelected + " for '" + this.searchQuery + "'";
+    }, 
+    foundNoQueryString() {
+      if (this.searchQuery == null) {
+        return "No documents found. Please specify a query above";
+      }
+      return "No documents found for '" + this.searchQuery + "'";
     }, 
     listDocuments() {
       // parse all document types in single document list and sort by score value
