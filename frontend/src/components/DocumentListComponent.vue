@@ -61,6 +61,7 @@
                   @downloadSTACNotebook="downloadSTACNotebookHandler"
                   @stacItemClicked="stacItemClicked"
                   @showSTACItemsOnMap="showSTACItemsOnMap"
+                  @showSpatialExtent="showSpatialExtent"
                   class="element-card" 
                 />
               </div>
@@ -112,6 +113,7 @@ export default {
     'closeDocumentList', 
     'stacItemClicked', 
     'showSTACItemsOnMap', 
+    'showSpatialExtent', 
   ], 
 
   data () {
@@ -190,6 +192,9 @@ export default {
     },
     showSTACItemsOnMap(stacCollectionID, requestUID) {
       this.$emit('showSTACItemsOnMap', stacCollectionID, requestUID);
+    }, 
+    showSpatialExtent(spatialExtent) {
+      this.$emit('showSpatialExtent', spatialExtent);
     }
   }, 
 

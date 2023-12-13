@@ -90,6 +90,7 @@
             @downloadSTACNotebook="downloadSTACNotebook"
             @stacItemClicked="stacItemClicked"
             @showSTACItemsOnMap="showSTACItemsOnMap"
+            @showSpatialExtent="showSpatialExtent"
           />
         </div>
         <div class="right-column">
@@ -254,6 +255,12 @@ export default {
         this.$refs.mapRef.focusMapOnSTACLayer(stacCollectionID, requestUID);
       }
     }, 
+    showSpatialExtent(bboxList) {
+      this.focusOnMap();
+      if (this.$refs.mapRef) {
+        this.$refs.mapRef.showSpatialExtent(bboxList);
+      }
+    }, 
 
     // UI STATE METHODS
     refreshUIAfterQuery() {
@@ -265,9 +272,10 @@ export default {
     focusOnMap() {
       // sets showMap to true and scrolls to map element
       this.showMap = true;
-      if (this.$refs.mapRef) {
-        this.$refs.mapRef.$el.scrollIntoView({behavior:'smooth'});
+      if (this.$refs.mapRef == null) {
+        return;
       }
+      this.$refs.mapRef.$el.scrollIntoView({behavior:'smooth'});
     }, 
     showMapClicked() {
       this.showMap = !this.showMap;

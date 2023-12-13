@@ -93,6 +93,7 @@ export default {
       stacCollectionLayers: {},
       drawnLayers: null, 
       heatLayer: null, 
+      spatialExtent: null, 
       // draw controller
       drawControl: null,
       polygonDrawer: null,
@@ -164,6 +165,16 @@ export default {
         this.map.removeLayer(this.heatLayer);
       }
       this.heatLayer = null;
+      // remove spatial extent layer
+      this.clearSpatialExtent();
+    }, 
+    clearSpatialExtent() {
+      if (this.spatialExtent !== null) {
+        for (const layer of this.spatialExtent.getLayers()) {
+          this.map.removeLayer(layer);
+        }
+      }
+      this.spatialExtent = null;
     }, 
     clearSTACLayers() {
       for (const stacCollectionID in this.stacCollectionLayers) {
@@ -182,16 +193,53 @@ export default {
       this.filterBounds = null;
     }, 
     getBoundsFromBBox(bbox) {
-      return new L.LatLngBounds([bbox[0], bbox[1]], [bbox[2], bbox[3]]);
+      // takes bbox [long/lat; long/lat]
+      return new L.LatLngBounds([bbox[1], bbox[0]], [bbox[3], bbox[2]]);
     }, 
     getLocationFilter() {
       return this.filterBounds;
     }, 
     // MAP UI FUNCTIONS
+    focusGlobal() {
+      // min long, min lat, max long, max lat
+      const globalBounds = this.getBoundsFromBBox([-180,-90,180,90])
+      this.map.fitBounds(globalBounds, {'animate': true});
+    }, 
+    showSpatialExtent(bboxList) {
+      // clear old spatial extent layer
+      this.clearSpatialExtent();
+
+      if (bboxList.length == 0) {
+        // focus globally if no other bbox is specified
+        this.focusGlobal();
+        return;
+      }
+      // create new spatial extent layer
+      const spatialExtentFeatureGroup = new L.FeatureGroup();
+      let foundBBox = false;
+      for (const bbox of bboxList) {
+        // check if bbox covers the whole map
+        foundBBox = true;
+        const bounds = this.getBoundsFromBBox(bbox);
+        const layer = new L.Rectangle(bounds, {
+          color: 'red', 
+          weight: 1
+        });
+        spatialExtentFeatureGroup.addLayer(layer);
+      }
+      if (foundBBox) {
+        // focus on feature group
+        this.map.fitBounds(spatialExtentFeatureGroup.getBounds(), {'animate': true});
+        // add to map
+        spatialExtentFeatureGroup.addTo(this.map);
+      }
+      this.spatialExtent = spatialExtentFeatureGroup;
+
+    }, 
     focusMapOnSTACLayer(stacCollectionID, requestUID) {
       if (stacCollectionID in this.stacCollectionLayers && requestUID in this.stacCollectionLayers[stacCollectionID]) {
         const featureGroup = this.stacCollectionLayers[stacCollectionID][requestUID];
-        this.map.fitBounds(featureGroup.getBounds());
+        this.map.fitBounds(featureGroup.getBounds(), {'animate': true});
       }
       else {
         console.log("cannot find feature group for stacCollectionID " + stacCollectionID + " and requestUID " + requestUID);
@@ -232,7 +280,7 @@ export default {
         console.log(geoBoundsList);
         return;
       }
-      this.map.fitBounds(initialBounds);
+      this.map.fitBounds(initialBounds, {'animate': true});
     }, 
     requestGeotweets() {
       // example function to show geotweets (used for testing!)

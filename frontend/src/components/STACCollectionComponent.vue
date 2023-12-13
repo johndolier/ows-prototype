@@ -19,6 +19,16 @@
           class="mx-1">
           <Tag :value="keyword" />
         </span>
+        <Tag 
+          v-if="spatialExtentCoversGlobe"
+          class="m-1"
+          value="Global"
+          severity="info"
+          v-tooltip="'STAC Collection covers the whole globe'"
+          icon="pi pi-globe"
+        />
+        
+
         <p ref="descriptionRef"
           align="left" 
           :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
@@ -35,17 +45,30 @@
         <PButton v-if="normalStyle"
           label="Request STAC items" 
           @click="submitStacItemQuery" 
+          icon="pi pi-cloud-download"
+          icon-pos="right"
           size="small" 
           severity="danger"
           :loading="stacItemsLoading"
-          class="m-2" 
+          class="w-3 m-1" 
         />
         <PButton v-if="normalStyle"
-          label="STAC Download Notebook" 
+          label="STAC Notebook Download" 
           @click="downloadSTACNotebook" 
+          icon="pi pi-download"
+          icon-pos="right"
           size="small" 
           severity="help" 
-          class="m-2" 
+          class="w-4 m-1" 
+        />
+        <PButton v-if="normalStyle"
+          label="Show Spatial Extent"
+          size="small"
+          severity="info"
+          icon="pi pi-map"
+          icon-pos="right"
+          class="w-3 m-1"
+          @click="showSpatialExtent"
         />
         <img class="thumbnail-img" 
           :src="content.assets.thumbnail.href"
@@ -125,6 +148,7 @@ export default {
     'downloadSTACNotebook', 
     'stacItemClicked', 
     'showSTACItemsOnMap', 
+    'showSpatialExtent', 
   ], 
 
   data() {
@@ -202,6 +226,16 @@ export default {
         return false;
       }
     }, 
+    spatialExtentCoversGlobe() {
+      // returns true if a bbox which covers whole globe is found in spatial extent variable of STAC collection
+      for (const bbox of this.content.extent.spatial.bbox) {
+        // check if bbox covers the whole map
+        if (bbox.includes(180) && bbox.includes(-180) && bbox.includes(-90) && bbox.includes(90)) {
+          return true;
+        }
+      }
+      return false;
+    },
   }, 
 
   methods: {
@@ -227,6 +261,17 @@ export default {
       const requestUID = this.currentlySelectedRequestUID;
       const stacCollectionID = this.content._key;
       this.$emit('showSTACItemsOnMap', stacCollectionID, requestUID);
+    }, 
+    showSpatialExtent() {
+      // iterate over spatial extent bboxes and send event to MapView (show them in map)
+      let filteredBBoxList = [];
+      for (const bbox of this.content.extent.spatial.bbox) {
+        if (bbox.includes(180) && bbox.includes(-180) && bbox.includes(-90) && bbox.includes(90)) {
+          continue;
+        }
+        filteredBBoxList.push(bbox);
+      }
+      this.$emit('showSpatialExtent', filteredBBoxList);
     }
   },
 

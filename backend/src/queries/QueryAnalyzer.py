@@ -125,11 +125,12 @@ class QueryAnalyzer:
             # TODO extract more data from details object? 
             # extracts coordinates from details.bbox attribute
             # returns bbox
+            # returns long/lat long/lat
             bbox = [
-                details.bbox['southwest'][0], 
                 details.bbox['southwest'][1], 
-                details.bbox['northeast'][0], 
+                details.bbox['southwest'][0], 
                 details.bbox['northeast'][1], 
+                details.bbox['northeast'][0], 
             ]
             return bbox
         except Exception as e:

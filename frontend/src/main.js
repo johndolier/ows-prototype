@@ -68,6 +68,11 @@ app.use(ToastService);
 import ConfirmationService from 'primevue/confirmationservice';
 app.use(ConfirmationService);
 
+// add Tooltip
+// https://primevue.org/tooltip/
+import Tooltip from 'primevue/tooltip';
+app.directive('tooltip', Tooltip);
+
 
 axios.defaults.withCredentials = true;
 // FastAPI backend
