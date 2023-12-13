@@ -130,17 +130,18 @@ class DataRetriever:
         '''
         # TODO automatically get connected eo missions/instruments
 
-        # for now, keyword list are used to retrieve stac collections
-        keyword_query = ''
-        for word in keywords:
-            keyword_query += f"{word} "
-        keyword_query = keyword_query.strip()
+        # alternatively, we can use the keywords to form a query (location and time is evicted from this query)
+        # query = ''
+        # for word in keywords:
+        #     query += f"{word} "
+        # query = query.strip()
+        
 
         model = SentenceTransformer('msmarco-distilbert-base-v4')
-        keyword_query_emb = model.encode(keyword_query).tolist()
+        query_embedding = model.encode(query).tolist()
         query_params = {
             #'query': keyword_query, 
-            'query_embedding': keyword_query_emb,  
+            'query_embedding': query_embedding,  
             #'limit': limit, 
             'sim_threshold': 0.1, 
         }
@@ -188,16 +189,16 @@ class DataRetriever:
         '''
             Makes query on arangodb to retrieve publications that match the query
         '''
-        # for now, keyword list are used to retrieve stac collections
-        keyword_query = ''
-        for word in keywords:
-            keyword_query += f"{word} "
-        keyword_query = keyword_query.strip()
+        # alternatively, we can use the keywords to form a query (location and time is evicted from this query)
+        # query = ''
+        # for word in keywords:
+        #     query += f"{word} "
+        # query = query.strip()
         
         #model = SentenceTransformer('msmarco-distilbert-base-v4')
         #query_emb = model.encode(query).tolist()
         query_params = {
-            'query': keyword_query,
+            'query': query,
             #'query_embedding': query_emb,  
             'sim_score': 0.9, 
         }
