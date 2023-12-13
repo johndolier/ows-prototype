@@ -14,10 +14,11 @@
       </span>
       <PButton 
         label="Submit" 
-        @click="this.$emit('submitQuery', this.userQuery)" 
-        size="small" 
+        icon="pi pi-globe"
+        icon-pos="right"
         rounded 
-        class="inline w-1 mx-2 text-sm" 
+        class="px-4 py-3 mx-2" 
+        @click="this.$emit('submitQuery', this.userQuery)" 
       />
     </div>
     <div class="center-x">
@@ -26,7 +27,9 @@
         icon-pos="left"
         size="small" 
         label="Show advanced options" 
-        rounded text class="ml-2 text-xs" 
+        rounded 
+        text 
+        class="ml-2 text-xs" 
         @click="this.$emit('advancedSearchClick')" 
       />
     </div>

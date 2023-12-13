@@ -1,46 +1,54 @@
 <template>
-  <div class="h-full w-full mx-1 ">
-    <div class="w-full my-2">
-      <PButton 
-        class="inline-flex mx-2 left-button" 
-        severity="info" 
-        size="small" 
-        label="SHOW GEOTWEETS (DEBUG)"
-        @click="requestGeotweets" 
-      />
-      <SplitButton 
-        class="inline-flex mx-2 left-button" 
-        severity="success" 
-        :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" 
-        :model="drawItems"
-        label="SELECT AREA" 
-        @click="startDrawing" 
-      />
-      <PButton 
-        v-if="isDrawing" class="inline-flex mx-2 left-button" 
-        severity="warning" 
-        size="small" 
-        label="STOP DRAWING"
-        @click="stopDrawing"
-      />
-      <PButton 
-        v-if="filterBounds" 
-        class="inline-flex mx-2 left-button" 
-        severity="warning" 
-        size="small" 
-        label="CLEAR FILTER"
-        @click="clearFilterLayer"
-      />
-      <PButton 
-        class="mx-5 w-2 right-button" 
-        severity="danger" 
-        size="small" 
-        icon="pi pi-trash" 
-        label="CLEAR MAP" 
-        @click="clearAllLayers"
+  <div>
+    <div class="mx-2">
+      <PButton
+        class="right-button"
+        :icon="showMap ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
+        :label="showMap ? 'Hide Map' : 'Show Map'"
+        @click="this.$emit('showMapClicked')"
       />
     </div>
-    <div id="mapContainer" class="">
+    <div 
+      class="w-full mx-1 "
+      :class="showMap ? 'visible-map' : 'invisible-map'"
+    >
+      <div class="w-full my-2">
+        <SplitButton 
+          class="inline-flex mx-2 left-button" 
+          severity="success" 
+          :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" 
+          :model="drawItems"
+          size="small"
+          label="SELECT AREA" 
+          @click="startDrawing" 
+        />
+        <PButton 
+          v-if="isDrawing" 
+          class="inline-flex mx-2 left-button" 
+          severity="warning" 
+          size="small" 
+          label="STOP DRAWING"
+          @click="stopDrawing"
+        />
+        <PButton 
+          v-if="filterBounds" 
+          class="inline-flex mx-2 left-button" 
+          severity="warning" 
+          size="small" 
+          label="CLEAR FILTER"
+          @click="clearFilterLayer"
+        />
+        <PButton 
+          class="mx-5 w-2 right-button" 
+          severity="danger" 
+          size="small" 
+          icon="pi pi-trash" 
+          label="CLEAR MAP" 
+          @click="clearAllLayers"
+        />
+      </div>
+      <div id="mapContainer">
+      </div>
     </div>
   </div>
 </template>
@@ -65,15 +73,20 @@ export default {
     documents: Object, // object that holds all documents that should eventually be displayed in the Map component
     stacItems: Object, // object that holds all stac items that have been queried + meta data if it should be displayed etc...
     initialFocusList: Object, // initial focus coordinates when starting the map
+    showMap: Boolean // controls whether the div element is hidden or not
   },
   inject: ['Utils'],
   emits: [
-    'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
+    'showMapClicked'
+  //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
   components: {},
 
   data() {
     return {
+      // UI state
+      
+      // map component
       map: null,
       // map layers
       stacCollectionLayers: [],
@@ -170,6 +183,11 @@ export default {
       return this.filterBounds;
     }, 
     focusMapOnLocationsList(geoBoundsList) {
+      if (this.map == null) {
+        // map was not rendered yet
+        console.log("warning - map was not rendered yet; cannot focusMapOnLocationsList");
+        return;
+      }
       // focus map by using the center of the geobounds list
       if (geoBoundsList == null || geoBoundsList.length == 0) {
         // console.log("the geoBoundsList provided is null, cananot focus list");
@@ -249,8 +267,106 @@ export default {
         }
       );
       this.heatLayer.addTo(this.map);
+    }, 
+    async createMap() {
+      // this function is called to create a new map instance and initiate "this.map"
+      const defaultFocus = [45, 20];
+      const defaultZoom = 5;
+      await this.waitForElm('#mapContainer');
+      this.map = L.map("mapContainer", { 
+        drawControl: false, 
+        minZoom: 3, 
+        maxZoom: 10,
+      }).setView(defaultFocus, defaultZoom);
+      L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(this.map);
 
-    }
+      // enable drawing shapes on map
+      // FeatureGroup is to store editable layers
+      this.drawnLayers = new L.FeatureGroup();
+      this.map.addLayer(this.drawnLayers);
+      this.drawControl = new L.Control.Draw({
+        position: 'topright', 
+        draw: {
+          polygon: false, 
+          polyline: false, 
+          circle: false, 
+          rectangle: false, 
+          marker: false, 
+          circlemarker: false, 
+        }, 
+        edit: {
+          featureGroup: this.drawnLayers
+        }
+      });
+      this.map.addControl(this.drawControl);
+
+      this.polygonDrawer = new L.Draw.Polygon(this.map);
+      this.rectangleDrawer = new L.Draw.Rectangle(this.map);
+
+      // add event listeners
+      this.map.on(L.Draw.Event.DRAWSTART, () => {
+        if (this.filterBounds !== null) {
+          console.log("filter already exists - will be deleted now!");
+          this.clearFilterLayer();
+        }
+      });
+      
+      this.map.on(L.Draw.Event.CREATED, e => {
+
+        e.layer.setStyle({
+          color: 'red', 
+        });
+        
+        // handle different shapes (rectangle, polygon)
+        // create new layer (cannot use e.layer because of Vue3.JS bug -> does not create Proxy object which causes reactivity issues)
+        if (e.layerType == 'rectangle') {
+          // we convert rectangle bounds to bbox and store it into coordinates
+          const coords = this.Utils.getBBoxFromBounds(e.layer.getBounds())
+          this.filterBounds = {
+          'type': 'bbox', 
+          'coords': coords, 
+          };
+        } else if (e.layerType == 'polygon') {
+          // polygon coords are simply the LatLng lists of the layer
+          const coords = e.layer.getLatLngs()
+          this.filterBounds = {
+          'type': 'polygon', 
+          'coords':  coords, 
+          };
+        } else {
+          console.log("warning - unknown layer type: " + e.layerType + "; cannot create drawn layer :(");
+          return
+        }
+        this.drawnLayers.addLayer(e.layer);
+        this.isDrawing = false;
+      });
+    }, 
+    waitForElm(selector) {
+      // this function waits for the element specified by the selector to appear in the DOM 
+      // needed for creating the map!
+      // https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
+      return new Promise(resolve => {
+        if (document.querySelector(selector)) {
+          return resolve(document.querySelector(selector));
+        }
+        
+        const observer = new MutationObserver(() => {
+          // console.log(mutations);
+          if (document.querySelector(selector)) {
+            observer.disconnect();
+            resolve(document.querySelector(selector));
+          }
+        });
+
+        observer.observe(document.body, {
+          childList: true, 
+          subtree: true
+        });
+      });
+    }, 
+
   },
 
   watch: {
@@ -288,78 +404,7 @@ export default {
 
   mounted() {
     // build map
-    const defaultFocus = [45, 20];
-    const defaultZoom = 5;
-    this.map = L.map("mapContainer", { 
-      drawControl: false, 
-      minZoom: 3, 
-      maxZoom: 10,
-    }).setView(defaultFocus, defaultZoom);
-
-    L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(this.map);
-
-    // enable drawing shapes on map
-    // FeatureGroup is to store editable layers
-    this.drawnLayers = new L.FeatureGroup();
-    this.map.addLayer(this.drawnLayers);
-    this.drawControl = new L.Control.Draw({
-      position: 'topright', 
-      draw: {
-        polygon: false, 
-        polyline: false, 
-        circle: false, 
-        rectangle: false, 
-        marker: false, 
-        circlemarker: false, 
-      }, 
-      edit: {
-        featureGroup: this.drawnLayers
-      }
-    });
-    this.map.addControl(this.drawControl);
-
-    this.polygonDrawer = new L.Draw.Polygon(this.map);
-    this.rectangleDrawer = new L.Draw.Rectangle(this.map);
-
-    // add event listeners
-    this.map.on(L.Draw.Event.DRAWSTART, () => {
-      if (this.filterBounds !== null) {
-        console.log("filter already exists - will be deleted now!");
-        this.clearFilterLayer();
-      }
-    });
-    
-    this.map.on(L.Draw.Event.CREATED, e => {
-
-      e.layer.setStyle({
-        color: 'red', 
-      });
-      
-      // handle different shapes (rectangle, polygon)
-      // create new layer (cannot use e.layer because of Vue3.JS bug -> does not create Proxy object which causes reactivity issues)
-      if (e.layerType == 'rectangle') {
-        // we convert rectangle bounds to bbox and store it into coordinates
-        const coords = this.Utils.getBBoxFromBounds(e.layer.getBounds())
-        this.filterBounds = {
-        'type': 'bbox', 
-        'coords': coords, 
-        };
-      } else if (e.layerType == 'polygon') {
-        // polygon coords are simply the LatLng lists of the layer
-        const coords = e.layer.getLatLngs()
-        this.filterBounds = {
-        'type': 'polygon', 
-        'coords':  coords, 
-        };
-      } else {
-        console.log("warning - unknown layer type: " + e.layerType + "; cannot create drawn layer :(");
-        return
-      }
-      this.drawnLayers.addLayer(e.layer);
-      this.isDrawing = false;
-    });
+    this.createMap();
     // set initial focus
     this.focusMapOnLocationsList(this.initialFocusList);
   },
@@ -372,3 +417,27 @@ export default {
 };
 
 </script>
+
+
+<style scoped>
+
+#mapContainer {
+    height: 90%;
+    width: 90%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    z-index: 0;
+}
+
+.invisible-map {
+  display: none; 
+}
+
+.visible-map {
+  height: 85vh;
+}
+
+</style>
