@@ -77,7 +77,7 @@ export default {
   },
   inject: ['Utils'],
   emits: [
-    'STACItemClicked', // triggers highlighting of stac item in document list
+    'stacItemClicked', // triggers highlighting of stac item in document list
     'showMapClicked'
   //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
@@ -90,7 +90,7 @@ export default {
       // map component
       map: null,
       // map layers
-      stacCollectionLayers: [],
+      stacCollectionLayers: {},
       drawnLayers: null, 
       heatLayer: null, 
       // draw controller
@@ -156,7 +156,7 @@ export default {
       // remove STAC layers
       // TODO think of better way to store stac items and layers
       this.clearSTACLayers();
-      this.stacCollectionLayers = [];
+      this.stacCollectionLayers = {};
 
       // remove heatmap layer
       if (this.heatLayer !== null) {
@@ -165,8 +165,11 @@ export default {
       this.heatLayer = null;
     }, 
     clearSTACLayers() {
-      for (const layer of this.stacCollectionLayers) {
-        this.map.removeLayer(layer);
+      for (const stacCollectionID in this.stacCollectionLayers) {
+        for (const requestUID in this.stacCollectionLayers[stacCollectionID]) {
+          const layer = this.stacCollectionLayers[stacCollectionID][requestUID];
+          this.map.removeLayer(layer);
+        }
       }
     }, 
     clearFilterLayer() {
@@ -375,36 +378,44 @@ export default {
       handler() {
         console.log("stac item re-rendering triggered!");
         this.clearSTACLayers();
-        for (const stac_collection_id in this.stacItems) {
-          // entryList consists of all entries for a single stac collection
-          const entryList = this.stacItems[stac_collection_id];
-          for (const entryUID in entryList) {
+        for (const stacCollectionID in this.stacItems) {
+          // stacCollectionDict consists of all requests for a single stac collection
+          const stacCollectionDict = this.stacItems[stacCollectionID];
+          for (const requestUID in stacCollectionDict) {
             // entry consists of one single request in that stac collection
-            const entry = entryList[entryUID];
-            if (!entry.selected) {
+            const requestDict = stacCollectionDict[requestUID];
+            if (!requestDict.selected) {
               continue;
             }
             // create layer for each entry
             const newFeatureGroup = new L.FeatureGroup();
-            // const color = this.Utils.stringToColour(stac_collection_id);
-            console.log(entry.highlightID);
-            for (const stac_item of entry.stac_items) {
-              console.log(stac_item.id);
-              if (stac_item.id == entry.highlightID) {
-                console.log("highlighting stac item! " + stac_item.id);
+            let color = 'red';
+            for (const stacItemID in requestDict.stacItems) {
+              const stacItem = requestDict.stacItems[stacItemID]
+              // console.log(stacItemID);
+              if (stacItemID == requestDict.highlightID) {
+                color = 'blue';
+                // console.log("highlighting stac item: " + stacItemID);
               }
-              const layer = new L.GeoJSON(stac_item, {
+              else {
+                color = 'red';
+                // console.log("not highlighting stac item: " + stacItemID);
+              }
+              const layer = new L.GeoJSON(stacItem, {
                 style: {
-                  color: 'red', 
+                  color: color, 
                 }
               });
+              // TODO re-implement with current data structure
               layer.on('click', (e) => {
-                const collection = e.propagatedFrom.feature.collection;
-                const id = e.propagatedFrom.feature.id;
-                this.$emit('STACItemClicked', collection, id);
-                e.layer.setStyle({
-                  color: 'blue', 
-                });
+                const stacCollectionID = e.propagatedFrom.feature.collection;
+                const stacItemID = e.propagatedFrom.feature.id;
+                const requestUID = e.propagatedFrom.feature.requestUID;
+                this.$emit('stacItemClicked', stacCollectionID, requestUID, stacItemID);
+                // TODO highlight layer
+                // e.layer.setStyle({
+                //   color: 'blue', 
+                // });
               });
               newFeatureGroup.addLayer(layer);
             }
@@ -413,7 +424,14 @@ export default {
             //     return {color: color}
             //   }
             // );
-            this.stacCollectionLayers.push(newFeatureGroup);
+
+            // add layer to stacCollectionLayers
+            if (this.stacCollectionLayers[stacCollectionID] == null) {
+              this.stacCollectionLayers[stacCollectionID] = {};
+            }
+            this.stacCollectionLayers[stacCollectionID][requestUID] = newFeatureGroup;
+
+            // add layer to map
             newFeatureGroup.addTo(this.map);  
           }
         } 

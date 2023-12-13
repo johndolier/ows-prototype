@@ -17,10 +17,9 @@ def get_stac_collection_from_id(id_str:str):
         stac_collection_id = id_str.split('/')[1]
         return stac_collection_id
     except Exception as e:
-        # invalid format!
-        print(f"failed to process stac item request for request {id_str}")
-        print(e)
-        # bad request
-        return None
+        # we assume that the id_str is already a valid STACCollectionId (e.g. it was already split in frontend client)
+        #print(f"WARNING: {e}")
+        #print(f"returning id_str as is: {id_str}")
+        return id_str
     
     

@@ -88,6 +88,7 @@
             :search-query="lastUserQuery"
             @submitStacItemQuery="submitStacItemQuery" 
             @downloadSTACNotebook="downloadSTACNotebook"
+            @stacItemClicked="stacItemClicked"
           />
         </div>
         <div class="right-column">
@@ -99,6 +100,7 @@
             :initial-focus-list="initialFocusList"
             :show-map="showMap"
             @show-map-clicked="showMapClicked"
+            @stacItemClicked="stacItemClicked"
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
@@ -235,16 +237,12 @@ export default {
         this.$refs.mapRef.focusMapOnLocationsList(locations);
       }
     }, 
-    // STAC item router methods
-    STACItemClicked(collection, stacItemId) {
+    // STAC item handler methods
+    stacItemClicked(stacCollectionID, requestUID, stacItemID) {
       // STAC item was clicked in map component
-      console.log("highlight STAC item triggered in HomeView");
-      console.log(collection);
-      console.log(stacItemId);
-      // set highlightID for all STAC items in this collection to null
-      for (const entryUID in this.stacItems[collection]) {
-        this.stacItems[collection][entryUID].highlightID = stacItemId;
-      }
+      // TODO handle event
+      // set highlightID
+      this.stacItems[stacCollectionID][requestUID].highlightID = stacItemID;
     },
 
     // UI STATE METHODS
@@ -430,24 +428,30 @@ export default {
         this.stacItems[stacCollectionId] = {}; 
       }
       let stacRequest = {
-        'time_filter': timeFilter, 
-        'location_filter': locationFilter, 
-        'stac_items': [], 
+        'timeFilter': timeFilter, 
+        'locationFilter': locationFilter, 
+        'stacItems': [], 
         'selected': false, 
         'loading': true, 
         'highlightID': null, // if some STAC item is clicked, highlightID indicates which one
       };
       const stacRequestUID = get_uid();
       this.stacItems[stacCollectionId][stacRequestUID] = stacRequest;
-      let response = [];
+      let stacItemsDict = {};
       try {
-        response = await this.requestSTACItems(stacCollectionId, locationFilter, timeFilter);
-        response = response.data[1];
+        const response = await this.requestSTACItems(stacCollectionId, locationFilter, timeFilter);
+        // transform list of STAC items (dictionaries) into dictionary of STAC items (key: uid)
+        for (const stacDict of response.data[1]) {
+          const id = stacDict.id;
+          stacItemsDict[id] = stacDict;
+          // add stacRequestUID to identify stacItem later
+          stacItemsDict[id].requestUID = stacRequestUID;
+        }
       }
       catch (err) {
         console.log(err);
         alert("Something went wrong");
-        response = [];
+        stacItemsDict = {};
       }
       finally {
         // set 'selected' false for all previous entries
@@ -455,7 +459,7 @@ export default {
           this.stacItems[stacCollectionId][entryUID].selected = false;
         }
         // set properties for new entry
-        this.stacItems[stacCollectionId][stacRequestUID].stac_items = response;
+        this.stacItems[stacCollectionId][stacRequestUID].stacItems = stacItemsDict;
         this.stacItems[stacCollectionId][stacRequestUID].loading = false;
         this.stacItems[stacCollectionId][stacRequestUID].selected = true;
       }
@@ -464,6 +468,7 @@ export default {
       // get location and time filters
       const locationFilter = this.getLocationFilter();
       const timeFilter = this.getTimeFilterList();
+
       const queryIsValid = this.validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter)
       if (!queryIsValid) {
         // invalid query parameters

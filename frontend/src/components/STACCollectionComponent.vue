@@ -68,11 +68,15 @@
         >
           <template #grid="slotProps">
             <div class="col-12 p-2 w-3">
-              <div class="p-2 border-1 surface-border surface-card border-round">
+              <div 
+                class="p-2"
+                :class="{'highlight-border' : (slotProps.data.id == currentlyHighlightedSTACItemID)}"
+                >
                 <img 
                   v-if="slotProps.data.img_link" 
                   class="stac-item-img" 
-                  :src="slotProps.data.img_link" 
+                  :src="slotProps.data.img_link"
+                  @click="onImageClick(slotProps.data)"
                 />
                 <div v-else>
                   No image available
@@ -107,7 +111,11 @@ export default {
     globalSTACItems: Object, 
     normalStyle: Boolean, // this flag controls styling (can either be "normal" (true) or "small" style (false))
   }, 
-  emits: ['submitStacItemQuery', 'downloadSTACNotebook'], 
+  emits: [
+    'submitStacItemQuery', 
+    'downloadSTACNotebook', 
+    'stacItemClicked'
+  ], 
 
   data() {
     return {
@@ -120,8 +128,8 @@ export default {
   computed: {
     stacItems() {
       // stacItems is a dictionary of STAC item requests performed on this STAC collection
-      if (this.content._id in this.globalSTACItems) {
-        return this.globalSTACItems[this.content._id];
+      if (this.content._key in this.globalSTACItems) {
+        return this.globalSTACItems[this.content._key];
       }
       else {
         return null;
@@ -138,29 +146,40 @@ export default {
       }
       return false;
     }, 
-    currentlySelectedResponse() {
-      // returns the current response that is selected (if there is one)
+    currentlySelectedRequest() {
+      // returns the current request item that is selected (if there is one)
       if (this.stacItems !== null) {
-        for (const entryUID in this.stacItems) {
-          if (this.stacItems[entryUID].selected) {
-            return this.stacItems[entryUID];
+        for (const requestUID in this.stacItems) {
+          if (this.stacItems[requestUID].selected) {
+            return this.stacItems[requestUID];
           }
         }
       }
       return null;
     }, 
-    currentlySelectedSTACItems() {
-      // returns the STAC items that are currently selected
-      if (this.currentlySelectedResponse !== null) {
-        return this.currentlySelectedResponse.stac_items;
+    currentlyHighlightedSTACItemID() {
+      // returns the ID of the currently highlighted STAC item
+      if (this.currentlySelectedRequest !== null) {
+        return this.currentlySelectedRequest.highlightID;
       }
       else {
-        return [];
+        return null;
       }
+    },
+    currentlySelectedSTACItems() {
+      // returns the STAC items that are currently selected
+      // transforms the dictionary of STAC items into an array
+      let stacItems = [];
+      if (this.currentlySelectedRequest !== null) {
+        for (const stacItemID in this.currentlySelectedRequest.stacItems) {
+          stacItems.push(this.currentlySelectedRequest.stacItems[stacItemID]);
+        }
+      }
+      return stacItems;
     }, 
     stacItemsPresent() {
       // returns true if there are any STAC items selected
-      if (this.currentlySelectedResponse !== null) {
+      if (this.currentlySelectedRequest !== null) {
         return true;
       }
       else {
@@ -174,14 +193,21 @@ export default {
       this.showMore = !this.showMore;
     }, 
     submitStacItemQuery() {
-      this.$emit('submitStacItemQuery', this.content._id);
+      this.$emit('submitStacItemQuery', this.content._key);
     }, 
     showItemsClick() {
       this.showItems = !this.showItems;
     }, 
     downloadSTACNotebook() {
-      this.$emit('downloadSTACNotebook', this.content._id);
+      this.$emit('downloadSTACNotebook', this.content._key);
     }, 
+
+    onImageClick(stacItem) {
+      const stacCollectionID = stacItem.collection;
+      const stacItemID = stacItem.id;
+      const requestUID = stacItem.requestUID;
+      this.$emit('stacItemClicked', stacCollectionID, requestUID, stacItemID);
+    },
   },
 
   mounted() {
@@ -209,6 +235,12 @@ export default {
     height: auto;
     border-radius: 0.1rem;
     display: inline-block;
+}
+
+.highlight-border {
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-color: #FF0000 !important;
 }
 
 

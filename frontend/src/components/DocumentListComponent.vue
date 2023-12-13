@@ -59,6 +59,7 @@
                   :normal-style="!isTopResultsList"
                   @submitStacItemQuery="submitStacItemQueryHandler" 
                   @downloadSTACNotebook="downloadSTACNotebookHandler"
+                  @stacItemClicked="stacItemClicked"
                   class="element-card" 
                 />
               </div>
@@ -105,7 +106,10 @@ export default {
   }, 
 
   emits: [
+    'submitStacItemQuery', 
+    'downloadSTACNotebook',
     'closeDocumentList', 
+    'stacItemClicked', 
   ], 
 
   data () {
@@ -179,6 +183,9 @@ export default {
     downloadSTACNotebookHandler(args) {
       this.$emit('downloadSTACNotebook', args);
     }, 
+    stacItemClicked(stacCollectionID, requestUID, stacItemID) {
+      this.$emit('stacItemClicked', stacCollectionID, requestUID, stacItemID);
+    },
   }, 
 
   watch: {
