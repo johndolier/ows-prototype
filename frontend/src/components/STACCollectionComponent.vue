@@ -1,5 +1,5 @@
 <template>
-  <Card class="flex flex-column align-items-center sm:align-items-start gap-3">
+  <Card>
     <template #title>
       <!--TODO make title link (details view)-->
       <div class="flex text-base">
@@ -272,5 +272,6 @@ export default {
   line-height: 1em;
   height: auto;
 }
+
 
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <Card class="flex flex-column align-items-center sm:align-items-start gap-3">
+  <Card>
     <template #title> 
       <div class="flex text-base">
         {{ content.title }}
