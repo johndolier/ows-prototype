@@ -78,8 +78,7 @@
         @advancedSearchClick="this.advancedSearchClick"
       />
       <div id="documentBody" class=" surface-ground flex">
-        <div class="column">
-          <!-- left column -->
+        <div class="left-column">
           <DocumentListComponent
             id="documentListComponent"
             :documents="documents" 
@@ -91,8 +90,7 @@
             @downloadSTACNotebook="downloadSTACNotebook"
           />
         </div>
-        <div class="column">
-          <!-- right column -->
+        <div class="right-column">
           <MapComponent 
             id="mapComponent" 
             ref="mapRef"
@@ -635,9 +633,14 @@ export default {
   display: block;
 }
 
-.column {
+.left-column {
   display: inline-block;
-  width: 50%;
+  width: 55%;
+}
+
+.right-column {
+  display: inline-block;
+  width: 45%;
 }
 
 

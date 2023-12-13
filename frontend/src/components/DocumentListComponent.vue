@@ -12,9 +12,9 @@
     <div v-if="isTopResultsList"
       class="w-full"
     >
-      <p class="inline-block">
+      <h3 class="inline-block">
         {{ topResultString }}
-      </p>
+      </h3>
       <PButton
         class="inline-block right-button"
         icon="pi pi-times-circle"
