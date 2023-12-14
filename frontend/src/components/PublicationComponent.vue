@@ -7,20 +7,35 @@
     </template>
     <template #content>
       <div class="w-full">
-        <span>
-          <Tag 
-            class="p-1" 
-            value="Publication" 
-            severity="warning"
-          />
-          <!-- TODO style keywords - make them clickable -->
-          <span 
-            v-for="keyword in content.keywords" :key="keyword" 
-            class="p-1"
-            >
+        <Tag 
+          class="p-1" 
+          value="Publication" 
+          severity="warning"
+        />
+        <!-- TODO style keywords - make them clickable -->
+        <span 
+          v-for="keyword in content.keywords" :key="keyword" 
+          class="p-1"
+          >
           <Tag :value="keyword" />
-          </span>
-          <!-- TODO display EO objects -->
+        </span>
+        <span
+          v-for="eoMission in eoMissions" :key="eoMission.short_name"
+          class="p-1">
+          <Tag 
+            :value="eoMission.short_name" 
+            severity="danger" 
+            v-tooltip="eoMission.full_name" 
+          />
+        </span>
+        <span
+          v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
+          class="p-1" >
+          <Tag 
+            :value="eoInstrument.short_name" 
+            severity="success" 
+            v-tooltip="eoInstrument.full_name"
+          />
         </span>
       </div>
       <p ref="abstractRef"
@@ -63,6 +78,29 @@ export default {
       showMore: false, 
       abstractOverflown: false, // is true when the abstract text overflows (computed at time of mount)
     }
+  }, 
+
+  computed: {
+    eoMissions() {
+      // returns a list of EO missions that are present in the STAC collection
+      let eoMissions = [];
+      for (const eoMission of this.content.eo_objects) {
+        if (eoMission.type == 'EOMission') {
+          eoMissions.push(eoMission);
+        }
+      }
+      return eoMissions;
+    }, 
+    eoInstruments() {
+      // returns a list of EO instruments that are present in the STAC collection
+      let eoInstruments = [];
+      for (const eoInstrument of this.content.eo_objects) {
+        if (eoInstrument.type == 'EOInstrument') {
+          eoInstruments.push(eoInstrument);
+        }
+      }
+      return eoInstruments;
+    }, 
   }, 
 
   methods: {

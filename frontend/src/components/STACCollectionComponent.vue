@@ -21,6 +21,24 @@
           class="p-1">
           <Tag :value="keyword" />
         </span>
+        <span
+          v-for="eoMission in eoMissions" :key="eoMission.short_name"
+          class="p-1">
+          <Tag 
+            :value="eoMission.short_name" 
+            severity="danger" 
+            v-tooltip="eoMission.full_name" 
+          />
+        </span>
+        <span
+          v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
+          class="p-1" >
+          <Tag 
+            :value="eoInstrument.short_name" 
+            severity="success" 
+            v-tooltip="eoInstrument.full_name"
+          />
+        </span>
         <Tag 
           v-if="spatialExtentCoversGlobe"
           class="m-1"
@@ -30,7 +48,6 @@
           icon="pi pi-globe"
         />
         
-
         <p ref="descriptionRef"
           align="left" 
           :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
@@ -162,6 +179,26 @@ export default {
   }, 
 
   computed: {
+    eoMissions() {
+      // returns a list of EO missions that are present in the STAC collection
+      let eoMissions = [];
+      for (const eoMission of this.content.eo_objects) {
+        if (eoMission.type == 'EOMission') {
+          eoMissions.push(eoMission);
+        }
+      }
+      return eoMissions;
+    }, 
+    eoInstruments() {
+      // returns a list of EO instruments that are present in the STAC collection
+      let eoInstruments = [];
+      for (const eoInstrument of this.content.eo_objects) {
+        if (eoInstrument.type == 'EOInstrument') {
+          eoInstruments.push(eoInstrument);
+        }
+      }
+      return eoInstruments;
+    }, 
     stacItems() {
       // stacItems is a dictionary of STAC item requests performed on this STAC collection
       if (this.content._key in this.globalSTACItems) {

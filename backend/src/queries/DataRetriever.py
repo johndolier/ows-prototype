@@ -152,28 +152,20 @@ class DataRetriever:
             result = []
         result = [e for e in result]
 
-        # convert iterable query to list of dicts
+        # add attributes to stac dictionary (score, eo_objects, loading (flag), stac_items (empty list))
         transformed_results = []
-        # normalize score
-        # TODO find better way (temporary solution)
-        min_score = float('inf')
-        max_score = 0
         for doc in result:
             stac = doc.get('stac')
             if not stac:
                 continue
             score = doc.get('score', 10)
             stac['score'] = score
-            if score < min_score:
-                min_score = score
-            if score > max_score:
-                max_score = score
-            stac['eo_objects'] = doc.get('eo_objects', [])
-            stac['loading'] = False # quick hack for frontend 
+            eo_objects = doc.get('eo_objects', [])
+            stac['eo_objects'] = self.__transform_eo_objects(eo_objects)
+            stac['loading'] = False # hack for frontend 
             stac['stac_items'] = [] # hack for frontend
             transformed_results.append(stac)
 
-        #transformed_results = normalize_scoring_range(transformed_results, min_score, max_score)
         return transformed_results
 
     def get_all_keywords(self, batchSize:int = 1000):
@@ -210,22 +202,16 @@ class DataRetriever:
         # convert iterable query to list of dicts
         # transform dictionary
         transformed_results = []
-        min_score = float('inf')
-        max_score = 0
         for doc in result:
             pub = doc.get('pub')
             if not pub:
                 continue
             score = doc.get('score', 0)
             pub['score'] = score
-            if score < min_score:
-                min_score = score
-            if score > max_score:
-                max_score = score
-            pub['eo_objects'] = doc.get('eo_objects', [])
+            eo_objects = doc.get('eo_objects', [])
+            pub['eo_objects'] = self.__transform_eo_objects(eo_objects)
             transformed_results.append(pub)
 
-        transformed_results = normalize_scoring_range(transformed_results, min_score, max_score)
         return transformed_results
 
     def get_geotweets(self, only_floods:bool=False, limit:int = 100) -> list[dict]:
@@ -467,6 +453,32 @@ time_range = [time_start, time_end]
         except:
             return None
     
-
+    def __transform_eo_objects(self, eo_objects:list) -> list[dict]:
+        '''
+            Transform EO objects to fit standardized interface
+        '''
+        transformed_list = []
+        for eo_object in eo_objects:
+            split_id = eo_object.get('id').split('/')
+            eo_type = split_id[0]
+            id = split_id[1]
+            
+            if eo_type == 'EOMission':
+                full_name = eo_object.get('mission_name_full')
+                short_name = eo_object.get('mission_name_short')
+            elif eo_type == 'EOInstrument':
+                full_name = eo_object.get('instrument_name_full')
+                short_name = eo_object.get('instrument_name_short')
+            else:
+                print(f"ERROR - unknown eo type {eo_type}")
+                return []
+            
+            transformed_list.append({
+                'id': id, 
+                'full_name': full_name,
+                'short_name': short_name, 
+                'type': eo_type,
+            })
+        return transformed_list
 
 
