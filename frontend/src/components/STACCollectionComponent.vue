@@ -91,12 +91,12 @@
             label="STAC Collection" 
             severity="warning" 
           />
-          <!-- TODO style keywords - make them clickable -->
           <span 
             v-for="keyword in content.keywords" :key="keyword" 
             class="p-1">
             <PButton :label="keyword"
               class="tag-button"
+              @click="keywordClicked(keyword)"
             />
           </span>
           <span
@@ -254,6 +254,7 @@ export default {
     'stacItemClicked', 
     'showSTACItemsOnMap', 
     'showSpatialExtent', 
+    'keywordClicked', 
   ], 
 
   data() {
@@ -356,6 +357,10 @@ export default {
   }, 
 
   methods: {
+    keywordClicked(keyword) {
+      // emit the keywordClicked event
+      this.$emit('keywordClicked', keyword);
+    },
     showMoreClicked() {
       this.showMore = !this.showMore;
     }, 
@@ -395,23 +400,15 @@ export default {
       this.eoMissionDetail = eoMission;
       this.showEOMissionDetail = true;
     }, 
-    closeEOMissionDetail() {
-      this.showEOMissionDetail = false;
-      this.eoMissionDetail = null;
-    }, 
     eoInstrumentDetailClicked(eoInstrument) {
       // open Dialog with EO instrument details
       this.eoInstrumentDetail = eoInstrument;
       this.showEOInstrumentDetail = true;
     },
-    closeEOInstrumentDetail() {
-      this.showEOInstrumentDetail = false;
-      this.eoInstrumentDetail = null;
-    }, 
     openMissionSite(missionSite) {
       // open mission site in new tab
       window.open(missionSite);
-    }
+    },
   },
 
   mounted() {

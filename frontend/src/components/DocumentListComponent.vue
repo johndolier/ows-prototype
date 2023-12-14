@@ -44,6 +44,7 @@
                   class="element-card" 
                   :content="slotProps.data[1]" 
                   :normal-style="!isTopResultsList"
+                  @keyword-clicked="keywordClicked"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'web_document'">
@@ -54,6 +55,7 @@
               </div>
               <div v-else-if="slotProps.data[0] == 'stac_collection'">
                 <STACCollectionComponent 
+                  class="element-card" 
                   :content="slotProps.data[1]" 
                   :globalSTACItems="stacItems"
                   :normal-style="!isTopResultsList"
@@ -62,7 +64,7 @@
                   @stacItemClicked="stacItemClicked"
                   @showSTACItemsOnMap="showSTACItemsOnMap"
                   @showSpatialExtent="showSpatialExtent"
-                  class="element-card" 
+                  @keyword-clicked="keywordClicked"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'stac_item'">
@@ -114,6 +116,7 @@ export default {
     'stacItemClicked', 
     'showSTACItemsOnMap', 
     'showSpatialExtent', 
+    'keywordClicked', 
   ], 
 
   data () {
@@ -195,7 +198,10 @@ export default {
     }, 
     showSpatialExtent(spatialExtent) {
       this.$emit('showSpatialExtent', spatialExtent);
-    }
+    }, 
+    keywordClicked(keyword) {
+      this.$emit('keywordClicked', keyword);
+    },
   }, 
 
   watch: {

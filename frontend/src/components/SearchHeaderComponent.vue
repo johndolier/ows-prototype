@@ -8,7 +8,7 @@
           v-on:keyup.enter="this.$emit('submitQuery', this.userQuery)" 
           type="text" 
           size="medium" 
-          :placeholder="startText ? startText : 'Search'" 
+          :placeholder="placeholder ? placeholder : 'Search'" 
           class="inline w-full" 
         />
       </span>
@@ -47,7 +47,8 @@ export default {
   props: {
     queryIsLoading: Boolean, 
     showAdvancedSearch: Boolean, 
-    startText: String, 
+    placeholder: String, 
+    homeViewQuery: String, 
   }, 
 
   emits: [
@@ -59,6 +60,11 @@ export default {
       userQuery: null, 
     }
   }, 
+  watch: {
+    homeViewQuery(newQuery) {
+      this.userQuery = newQuery; 
+    }
+  }
 }
 
 </script>

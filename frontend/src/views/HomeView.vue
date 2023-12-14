@@ -62,7 +62,7 @@
         class="center"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch" 
-        startText="Start your search here..." 
+        placeholder="Start your search here..." 
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
       />
@@ -74,6 +74,7 @@
         class="center-x surface-ground z-1"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch"
+        :homeViewQuery="homeViewQuery"
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
       />
@@ -91,6 +92,7 @@
             @stacItemClicked="stacItemClicked"
             @showSTACItemsOnMap="showSTACItemsOnMap"
             @showSpatialExtent="showSpatialExtent"
+            @keyword-clicked="keywordClicked"
           />
         </div>
         <div class="right-column">
@@ -170,8 +172,11 @@ export default {
       stacItems: {}, 
       // keywords: [], 
 
-      // last user query
-      lastUserQuery: null, 
+      // last user query (used to be shown in DocumentList elements)
+      lastUserQuery: null,
+      
+      // homeViewQuery is used as a 'prop' in SearchHeaderComponent and can be used to override userQuery attribute 
+      homeViewQuery: null,
 
       // UI STATE VARIABLES
       showStartScreen: true, 
@@ -300,6 +305,12 @@ export default {
     minimizeMap() {
       this.showMap = false;
     }, 
+    // DOCUMENT LIST COMPONENT METHODS
+    keywordClicked(keyword) {
+      // user clicked on a keyword in a document -> submit query with keyword
+      this.homeViewQuery = keyword;
+      this.submitQuery(keyword);
+    },
   
     // BACKEND QUERY HELPER METHODS
     getLocationFilter() {
@@ -357,6 +368,7 @@ export default {
       // after setting analyzer results from Query Analyzer, continue with normal document query
       await this.makeDocumentQueryRequest(userQuery, keywords);
       this.lastUserQuery = userQuery;
+      this.homeViewQuery = userQuery;
       // let "topResults" appear and hide map
       this.refreshUIAfterQuery();
     }, 
