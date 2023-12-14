@@ -1,144 +1,227 @@
 <template>
-  <Card>
-    <template #title>
-      <!--TODO make title link (details view)-->
-      <div id="titleElement"
-        class="flex text-base"
-      >
-        {{ content.title }}
-      </div> 
-    </template>
-    <template #content>
-      <div class="w-8 mx-3 left-block">
-        <Tag 
-          class="p-1" 
-          value="STAC Collection" 
-          severity="warning" 
-        />
-        <!-- TODO style keywords - make them clickable -->
-        <span 
-          v-for="keyword in content.keywords" :key="keyword" 
-          class="p-1">
-          <Tag :value="keyword" />
-        </span>
-        <span
-          v-for="eoMission in eoMissions" :key="eoMission.short_name"
-          class="p-1">
-          <Tag 
-            :value="eoMission.short_name" 
-            severity="danger" 
-            v-tooltip="eoMission.full_name" 
-          />
-        </span>
-        <span
-          v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
-          class="p-1" >
-          <Tag 
-            :value="eoInstrument.short_name" 
-            severity="success" 
-            v-tooltip="eoInstrument.full_name"
-          />
-        </span>
-        <Tag 
-          v-if="spatialExtentCoversGlobe"
-          class="m-1"
-          value="Global"
-          severity="info"
-          v-tooltip="'STAC Collection covers the whole globe'"
-          icon="pi pi-globe"
-        />
-        
-        <p ref="descriptionRef"
-          align="left" 
-          :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
-          v-html="content.description">
+  <div>
+    <!-- This dialog displays EO Missions -->
+    <Dialog v-if="eoMissionDetail"
+      v-model:visible="showEOMissionDetail"
+      modal
+      :header="eoMissionDetail.full_name"
+      :style="{width: '50rem'}"
+      :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    >
+      <div class="flex">
+        <p class="w-9 p-3">
+          {{ eoMissionDetail.description }}
         </p>
         <PButton 
-          v-if="descriptionOverflow"
-          :label="showMore ? 'Show less' : 'Show more'"
-          link
-          @click="showMoreClicked"
-        />
-      </div>
-      <div class="w-3 right-block">
-        <PButton v-if="normalStyle"
-          label="Request STAC items" 
-          @click="submitStacItemQuery" 
-          icon="pi pi-cloud-download"
-          icon-pos="right"
-          size="small" 
+          class="w-2 m-5"
           severity="danger"
-          :loading="stacItemsLoading"
-          class="w-3 m-1" 
-        />
-        <PButton v-if="normalStyle"
-          label="STAC Notebook Download" 
-          @click="downloadSTACNotebook" 
-          icon="pi pi-download"
-          icon-pos="right"
-          size="small" 
-          severity="help" 
-          class="w-4 m-1" 
-        />
-        <PButton v-if="normalStyle"
-          label="Show Spatial Extent"
-          size="small"
-          severity="info"
-          icon="pi pi-map"
-          icon-pos="right"
-          class="w-3 m-1"
-          @click="showSpatialExtent"
-        />
-        <img class="thumbnail-img" 
-          :src="content.assets.thumbnail.href"
+          label="Go To Mission Site"
+          size="large"
+          @click="openMissionSite(eoMissionDetail.mission_site)"
         />
       </div>
-      <div v-if="stacItemsPresent">
-        <div class="overflow-hidden">
-          <PButton 
-              class="items-button"
-              :label="'Show items (#' + currentlySelectedSTACItems.length + ')'" 
-              @click="showItemsClick" 
-              :icon="showItems ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " 
-            />
-            <PButton
-              class="map-button"
-              label="Show STAC Items on Map"
-              icon="pi pi-map"
-              @click="showSTACItemsOnMap"
-            />
-        </div>
-        <DataView 
-          v-if="showItems" 
-          :value="currentlySelectedSTACItems" 
-          :layout="'grid'" 
-          :rows="12"
-          :paginator="currentlySelectedSTACItems.length > 12" 
-          class="h-full"
+      <div>
+        <b class="pad-right">Agencies:  </b>
+      <Tag 
+        class="p-2"
+        :value="eoMissionDetail.agencies"
+        severity="info"
+      />
+      </div>
+    </Dialog>
+    <!-- This dialog displays EO Instruments -->
+    <Dialog v-if="eoInstrumentDetail"
+      v-model:visible="showEOInstrumentDetail"
+      modal
+      :header="eoInstrumentDetail.full_name"
+      :style="{width: '50rem'}"
+      :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    >
+      <div>
+        <p class="p-3">
+          {{ eoInstrumentDetail.description }}
+        </p>
+      </div>
+      <div class="flex">
+        <Tag 
+          class="p-1 m-1"
+          :value="eoInstrumentDetail.instrument_type"
+          severity="warning"
+        />
+        <Tag 
+          class="p-1 m-1"
+          :value="eoInstrumentDetail.instrument_technology"
+          severity="warning"
+        />
+      </div>
+      <div>
+        <b class="pad-right">Waveband categories:  </b>
+      <Tag 
+        class="p-2"
+        :value="eoInstrumentDetail.waveband_categories"
+        severity="success"
+      />
+      </div>
+      <div>
+        <b class="pad-right">Agencies:  </b>
+      <Tag 
+        class="p-2"
+        :value="eoInstrumentDetail.agencies"
+        severity="info"
+      />
+      </div>
+    </Dialog>
+    <Card>
+      <template #title>
+        <!--TODO make title link (details view)-->
+        <div id="titleElement"
+          class="flex text-base"
         >
-          <template #grid="slotProps">
-            <div class="col-12 p-2 w-3">
-              <div 
-                class="p-2"
-                :class="{'highlight-border' : (slotProps.data.id == currentlyHighlightedSTACItemID)}"
-                >
-                <img 
-                  v-if="slotProps.data.img_link" 
-                  class="stac-item-img" 
-                  :src="slotProps.data.img_link"
-                  @click="onImageClick(slotProps.data)"
-                  @dblclick="showSTACItemsOnMap"
-                />
-                <div v-else>
-                  No image available
+          {{ content.title }}
+        </div> 
+      </template>
+      <template #content>
+        <div class="w-8 mx-3 left-block">
+          <Tag 
+            class="p-1" 
+            value="STAC Collection" 
+            severity="warning" 
+          />
+          <!-- TODO style keywords - make them clickable -->
+          <span 
+            v-for="keyword in content.keywords" :key="keyword" 
+            class="p-1">
+            <Tag :value="keyword" />
+          </span>
+          <span
+            v-for="eoMission in eoMissions" :key="eoMission.short_name"
+            class="p-1">
+            <!-- <Tag 
+              :value="eoMission.short_name" 
+              severity="danger" 
+              v-tooltip="eoMission.full_name" 
+            /> -->
+            <PButton
+              :label="eoMission.short_name"
+              severity="danger"
+              @click="eoMissionDetailClicked(eoMission)"
+            />
+          </span>
+          <span
+            v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
+            class="p-1" >
+            <!-- <Tag 
+              :value="eoInstrument.short_name" 
+              severity="success" 
+              v-tooltip="eoInstrument.full_name"
+            /> -->
+            <PButton
+              :label="eoInstrument.short_name"
+              severity="success"
+              @click="eoInstrumentDetailClicked(eoInstrument)"
+            />
+          </span>
+          <Tag 
+            v-if="spatialExtentCoversGlobe"
+            class="m-1"
+            value="Global"
+            severity="info"
+            v-tooltip="'STAC Collection covers the whole globe'"
+            icon="pi pi-globe"
+          />
+          
+          <p ref="descriptionRef"
+            align="left" 
+            :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
+            v-html="content.description">
+          </p>
+          <PButton 
+            v-if="descriptionOverflow"
+            :label="showMore ? 'Show less' : 'Show more'"
+            link
+            @click="showMoreClicked"
+          />
+        </div>
+        <div class="w-3 right-block">
+          <PButton v-if="normalStyle"
+            label="Request STAC items" 
+            @click="submitStacItemQuery" 
+            icon="pi pi-cloud-download"
+            icon-pos="right"
+            size="small" 
+            severity="danger"
+            :loading="stacItemsLoading"
+            class="w-3 m-1" 
+          />
+          <PButton v-if="normalStyle"
+            label="STAC Notebook Download" 
+            @click="downloadSTACNotebook" 
+            icon="pi pi-download"
+            icon-pos="right"
+            size="small" 
+            severity="help" 
+            class="w-4 m-1" 
+          />
+          <PButton v-if="normalStyle"
+            label="Show Spatial Extent"
+            size="small"
+            severity="info"
+            icon="pi pi-map"
+            icon-pos="right"
+            class="w-3 m-1"
+            @click="showSpatialExtent"
+          />
+          <img class="thumbnail-img" 
+            :src="content.assets.thumbnail.href"
+          />
+        </div>
+        <div v-if="stacItemsPresent">
+          <div class="overflow-hidden">
+            <PButton 
+                class="items-button"
+                :label="'Show items (#' + currentlySelectedSTACItems.length + ')'" 
+                @click="showItemsClick" 
+                :icon="showItems ? 'pi pi-angle-double-down' : 'pi pi-angle-double-right' " 
+              />
+              <PButton
+                class="map-button"
+                label="Show STAC Items on Map"
+                icon="pi pi-map"
+                @click="showSTACItemsOnMap"
+              />
+          </div>
+          <DataView 
+            v-if="showItems" 
+            :value="currentlySelectedSTACItems" 
+            :layout="'grid'" 
+            :rows="12"
+            :paginator="currentlySelectedSTACItems.length > 12" 
+            class="h-full"
+          >
+            <template #grid="slotProps">
+              <div class="col-12 p-2 w-3">
+                <div 
+                  class="p-2"
+                  :class="{'highlight-border' : (slotProps.data.id == currentlyHighlightedSTACItemID)}"
+                  >
+                  <img 
+                    v-if="slotProps.data.img_link" 
+                    class="stac-item-img" 
+                    :src="slotProps.data.img_link"
+                    @click="onImageClick(slotProps.data)"
+                    @dblclick="showSTACItemsOnMap"
+                  />
+                  <div v-else>
+                    No image available
+                  </div>
                 </div>
               </div>
-            </div>
-          </template>
-        </DataView>
-      </div>
-    </template>
-  </Card>
+            </template>
+          </DataView>
+        </div>
+      </template>
+    </Card>
+  </div>
 </template>
 
 
@@ -147,6 +230,8 @@
 import Card from 'primevue/card';
 import DataView from 'primevue/dataview';
 import Tag from 'primevue/tag';
+// import DynamicDialog from 'primevue/dynamicdialog';
+import Dialog from 'primevue/dialog';
 
 export default {
 
@@ -155,7 +240,9 @@ export default {
   components: {
     Card,
     Tag,
-    DataView
+    DataView, 
+    // DynamicDialog, 
+    Dialog, 
     }, 
   props: {
     content: Object, 
@@ -175,6 +262,10 @@ export default {
       showItems: false,
       showMore: false,
       descriptionOverflow: false, // is true when the description text overflows (computed at time of mount)
+      showEOMissionDetail: false,
+      showEOInstrumentDetail: false,
+      eoMissionDetail: null, 
+      eoInstrumentDetail: null, 
     }
   }, 
 
@@ -299,6 +390,28 @@ export default {
         filteredBBoxList.push(bbox);
       }
       this.$emit('showSpatialExtent', filteredBBoxList);
+    }, 
+    eoMissionDetailClicked(eoMission) {
+      // open Dialog with EO mission details
+      this.eoMissionDetail = eoMission;
+      this.showEOMissionDetail = true;
+    }, 
+    closeEOMissionDetail() {
+      this.showEOMissionDetail = false;
+      this.eoMissionDetail = null;
+    }, 
+    eoInstrumentDetailClicked(eoInstrument) {
+      // open Dialog with EO instrument details
+      this.eoInstrumentDetail = eoInstrument;
+      this.showEOInstrumentDetail = true;
+    },
+    closeEOInstrumentDetail() {
+      this.showEOInstrumentDetail = false;
+      this.eoInstrumentDetail = null;
+    }, 
+    openMissionSite(missionSite) {
+      // open mission site in new tab
+      window.open(missionSite);
     }
   },
 
@@ -381,6 +494,10 @@ export default {
   float: left;
   padding: 5px;
   margin: 3px;
+}
+
+.pad-right {
+  padding-right: 0.5rem;
 }
 
 

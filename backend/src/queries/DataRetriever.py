@@ -473,8 +473,9 @@ time_range = [time_start, time_end]
                     'id': eo_object.get('_id'),
                     'full_name':  eo_object.get('mission_name_full'), 
                     'short_name': eo_object.get('mission_name_short'), 
+                    'description': eo_object.get('description'),
                     'data_access_portal': eo_object.get('data_access_portal'), 
-                    'mission_agencies': eo_object.get('mission_agencies'), 
+                    'agencies': eo_object.get('mission_agencies'), 
                     'mission_site': eo_object.get('mission_site'), 
                 })
             elif eo_type == 'EOInstrument':
@@ -483,7 +484,7 @@ time_range = [time_start, time_end]
                     'full_name': eo_object.get('instrument_name_full'), 
                     'short_name': eo_object.get('instrument_name_short'), 
                     'description': eo_object.get('description'), 
-                    'instrument_agencies': eo_object.get('instrument_agencies'), 
+                    'agencies': eo_object.get('instrument_agencies'), 
                     'instrument_status': eo_object.get('instrument_status'), 
                     'instrument_type': eo_object.get('instrument_type'), 
                     'instrument_technology': eo_object.get('instrument_technology'), 

@@ -73,6 +73,10 @@ app.use(ConfirmationService);
 import Tooltip from 'primevue/tooltip';
 app.directive('tooltip', Tooltip);
 
+// add DynamicDialog
+// import DialogService from 'primevue/dialogservice';
+// app.use(DialogService);
+
 
 // `withCredentials` indicates whether or not cross-site Access-Control requests
 // should be made using credentials (disable if FastAPI backend specified wildcard ('*') in CORS policy)
