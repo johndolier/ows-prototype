@@ -159,7 +159,7 @@ export default {
           documentList.push(['publication', element]);
         }
       }
-      // TODO include STAC items / Social media
+      // TODO include Social media
 
       // sort list and limit view
       //const limitDoc = 10; // show only 10 documents for now

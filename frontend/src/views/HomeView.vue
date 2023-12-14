@@ -241,9 +241,7 @@ export default {
     }, 
     // STAC item handler methods
     stacItemClicked(stacCollectionID, requestUID, stacItemID) {
-      // STAC item was clicked in map component
-      // TODO handle event
-      // set highlightID
+      // STAC item was clicked in map component -> set highlightID to indicate which one was clicked
       this.stacItems[stacCollectionID][requestUID].highlightID = stacItemID;
     },
     showSTACItemsOnMap(stacCollectionID, requestUID) {
@@ -363,7 +361,6 @@ export default {
       this.refreshUIAfterQuery();
     }, 
     async makeDocumentQueryRequest(userQuery, keywords) {
-      // TODO build in error handling
       const promises = []; 
       if (this.selectPublications) {
         const pubRequest = this.requestPublications(userQuery, keywords);
@@ -384,7 +381,6 @@ export default {
         for (const singleResponse of responseList) {
           if (singleResponse.status != 200) {
             // request failed
-            // TODO print which request failed
             console.log("database request failed!");
             console.log(singleResponse);
             continue;

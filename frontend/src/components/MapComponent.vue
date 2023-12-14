@@ -156,7 +156,6 @@ export default {
       this.clearFilterLayer();
 
       // remove STAC layers
-      // TODO think of better way to store stac items and layers
       this.clearSTACLayers();
       this.stacCollectionLayers = {};
 
@@ -185,10 +184,6 @@ export default {
       }
     }, 
     clearFilterLayer() {
-      // TODO check if layers have to be removed from map as well?!
-      // for (const layer of this.drawnLayers.getLayers()) {
-      //   this.map.removeLayer(layer);
-      // }
       this.drawnLayers.clearLayers();
       this.filterBounds = null;
     }, 
@@ -246,6 +241,7 @@ export default {
       }
     }, 
     focusMapOnLocationsList(geoBoundsList) {
+      // TODO refactor this function (is only used when focusing on geoparsed location from query)
       if (this.map == null) {
         // map was not rendered yet
         console.log("warning - map was not rendered yet; cannot focusMapOnLocationsList");
@@ -264,7 +260,6 @@ export default {
           currentBounds = this.getBoundsFromBBox(geoBounds.coords);
         }
         else {
-          // TODO handle other bound types
           console.log("warning - type " + geoBounds.type + " not implemented in function (focusMap)");
           continue;
         }
@@ -311,13 +306,12 @@ export default {
 
     addHeatMap(coordinateList) {
       // adds the coordinate list as a heatmap on the map
-      // TODO handle data structure (for later editing)
-
+      // TODO refactor this function (reusable data structure, clean implementation, use some weight for intensity etc.)
+      const weight = 0.5;
       // add intensity as third parameter in list
-      // TODO use some (meaningful) weight for intensity?
       let intensityList = [];
       for (const coordinates of coordinateList) {
-        const intensity = [coordinates[0], coordinates[1], 0.5];
+        const intensity = [coordinates[0], coordinates[1], weight];
         intensityList.push(intensity);
       }
       this.heatLayer = new L.heatLayer(
@@ -465,16 +459,12 @@ export default {
                   color: color, 
                 }
               });
-              // TODO re-implement with current data structure
+              // add click event listener
               layer.on('click', (e) => {
                 const stacCollectionID = e.propagatedFrom.feature.collection;
                 const stacItemID = e.propagatedFrom.feature.id;
                 const requestUID = e.propagatedFrom.feature.requestUID;
                 this.$emit('stacItemClicked', stacCollectionID, requestUID, stacItemID);
-                // TODO highlight layer
-                // e.layer.setStyle({
-                //   color: 'blue', 
-                // });
               });
               newFeatureGroup.addLayer(layer);
             }

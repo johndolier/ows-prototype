@@ -16,7 +16,6 @@ export default class {
     
     getBBoxFromBounds(bounds) {
       // return a list (bbox) from the Leaflet bounds object
-      // TODO add type checks
       let bbox = [
         bounds.getSouth(),
         bounds.getWest(), 
