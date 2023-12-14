@@ -34,8 +34,8 @@
     >
       <template #list="slotProps">
         <div class="col-12">
-          <div class="flex flex-column p-4 gap-4">
-            <div class="flex flex-column flex-1 gap-4">
+          <div class="flex flex-column document-element surface-border">
+            <div class="flex flex-column flex-1">
               <div 
                 v-if="slotProps.data[0] == 'publication'" 
                 class="block w-full"
@@ -218,4 +218,15 @@ export default {
 }
 
 </script>
+
+<style>
+
+.document-element {
+  border: 1px solid;
+  border-radius: 5px;
+  gap: 1.0rem !important;
+
+}
+
+</style>
 

@@ -2,21 +2,23 @@
   <Card>
     <template #title>
       <!--TODO make title link (details view)-->
-      <div class="flex text-base">
+      <div id="titleElement"
+        class="flex text-base"
+      >
         {{ content.title }}
       </div> 
     </template>
     <template #content>
       <div class="w-8 mx-3 left-block">
         <Tag 
-          class="mx-2" 
+          class="p-1" 
           value="STAC Collection" 
           severity="warning" 
         />
         <!-- TODO style keywords - make them clickable -->
         <span 
           v-for="keyword in content.keywords" :key="keyword" 
-          class="mx-1">
+          class="p-1">
           <Tag :value="keyword" />
         </span>
         <Tag 
@@ -287,6 +289,12 @@ export default {
 
 
 <style scoped>
+
+#titleElement {
+  padding-left: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 0;
+}
 
 .thumbnail-img {
     width: 100%;

@@ -1,7 +1,7 @@
 <template>
   <Card>
     <template #title> 
-      <div class="flex text-base">
+      <div id ="titleElement" class="flex text-base">
         {{ content.title }}
       </div> 
     </template>
@@ -9,14 +9,15 @@
       <div class="w-full">
         <span>
           <Tag 
-            class="mx-2" 
+            class="p-1" 
             value="Publication" 
             severity="warning"
           />
           <!-- TODO style keywords - make them clickable -->
           <span 
             v-for="keyword in content.keywords" :key="keyword" 
-            class="mx-1">
+            class="p-1"
+            >
           <Tag :value="keyword" />
           </span>
           <!-- TODO display EO objects -->
@@ -82,6 +83,12 @@ export default {
 
 
 <style scoped>
+
+#titleElement {
+  padding-left: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 0;
+}
 
 .no-text {
   overflow: hidden;

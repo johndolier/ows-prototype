@@ -26,6 +26,25 @@ html,body {
     padding: 0.5rem 0.5rem;
 }
 
+.p-card-body {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.p-card-content {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+
+}
+
+.p-card-title {
+    overflow: auto;
+}
+
 /* .p-multiselect {
     font-size: 0.5rem !important;
 }

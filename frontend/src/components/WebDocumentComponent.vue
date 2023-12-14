@@ -2,7 +2,7 @@
 <template>
   <Card>
     <template #title>
-      <PButton 
+      <PButton id="titleElement"
         v-if="content.is_html" 
         v-html="content.title" 
         :label="content.title" 
@@ -19,7 +19,7 @@
       </PButton>
     </template>
     <template #content>
-      <div>
+      <!-- <div>
         <span class="w-full">
           <Tag 
             class="mx-2" 
@@ -27,7 +27,7 @@
             severity="warning"
           />
         </span>
-      </div>
+      </div> -->
       <p ref="contentRef"
         v-if="content.is_html" 
         :class="showMore ? 'more-text' : 'less-text'"
@@ -50,7 +50,7 @@
 <script>
 
 import Card from 'primevue/card';
-import Tag from 'primevue/tag';
+// import Tag from 'primevue/tag';
 
 export default {
 
@@ -58,7 +58,7 @@ export default {
   
   components: {
     Card, 
-    Tag, 
+    // Tag, 
   }, 
   props: {
     content: Object, 
@@ -98,11 +98,18 @@ export default {
 
 <style scoped>
 
+#titleElement {
+  font-size: 0.8em;
+  padding-top: 1rem;
+  padding-left: 1rem;
+  float: left;
+}
+
 .less-text {
   width: 100%;
   overflow: hidden;
   line-height: 1em;
-  height: 5em;
+  max-height: 5em;
 }
 
 .more-text {
