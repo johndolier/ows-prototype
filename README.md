@@ -41,23 +41,27 @@ ows-prototype
 |
 |___backend
 |   |
-|   |___src
-|   |   |
-|   |   |___config.yml
-|   |   |
-|   |   |___...
+|   |___assets
 |   |
-|   |___database
+|   |___src
 |       |
-|       |____Database.py
+|       |___config.yml
 |       |
-|       |____EOGraphCreator.py
+|       |___main.py
 |       |
-|       |____arangodump
-|            |
-|            |___nodes
-|            |
-|            |___edges
+|       |___database
+|       |   |
+|       |   |____Database.py
+|       |   |
+|       |   |____EOGraphCreator.py
+|       |   |
+|       |   |____arangodump
+|       |        |...
+|       |
+|       |___queries
+|       |   |...
+|       |
+|       |...
 |
 |__docker-compose.yml
 |__README.md
