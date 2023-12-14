@@ -21,10 +21,10 @@
         />
       </div>
       <div>
-        <b class="pad-right">Agencies:  </b>
-      <Tag 
-        class="p-2"
-        :value="eoMissionDetail.agencies"
+        <b class="label vertical-align-baseline">Agencies:  </b>
+      <PButton 
+        class="vertical-align-baseline"
+        :label="eoMissionDetail.agencies"
         severity="info"
       />
       </div>
@@ -42,31 +42,35 @@
           {{ eoInstrumentDetail.description }}
         </p>
       </div>
-      <div class="flex">
-        <Tag 
-          class="p-1 m-1"
-          :value="eoInstrumentDetail.instrument_type"
-          severity="warning"
-        />
-        <Tag 
-          class="p-1 m-1"
-          :value="eoInstrumentDetail.instrument_technology"
+      <div class="p-1">
+        <b class="label vertical-align-baseline">Type:  </b>
+        <PButton
+          class="p-2 vertical-align-baseline"
+          :label="eoInstrumentDetail.instrument_type"
           severity="warning"
         />
       </div>
-      <div>
-        <b class="pad-right">Waveband categories:  </b>
-      <Tag 
-        class="p-2"
-        :value="eoInstrumentDetail.waveband_categories"
+      <div class="p-1">
+        <b class="label vertical-align-baseline">Technology:  </b>
+        <PButton
+          class="p-2 vertical-align-baseline"
+          :label="eoInstrumentDetail.instrument_technology"
+          severity="warning"
+        />
+      </div>
+      <div class="p-1">
+        <b class="label vertical-align-baseline">Waveband categories:  </b>
+      <PButton 
+        class="p-2 vertical-align-baseline"
+        :label="eoInstrumentDetail.waveband_categories"
         severity="success"
       />
       </div>
-      <div>
-        <b class="pad-right">Agencies:  </b>
-      <Tag 
-        class="p-2"
-        :value="eoInstrumentDetail.agencies"
+      <div class="p-1">
+        <b class="label vertical-align-baseline">Agencies:  </b>
+      <PButton 
+        class="p-2 vertical-align-baseline"
+        :label="eoInstrumentDetail.agencies"
         severity="info"
       />
       </div>
@@ -82,26 +86,24 @@
       </template>
       <template #content>
         <div class="w-8 mx-3 left-block">
-          <Tag 
-            class="p-1" 
-            value="STAC Collection" 
+          <PButton 
+            class="tag-button" 
+            label="STAC Collection" 
             severity="warning" 
           />
           <!-- TODO style keywords - make them clickable -->
           <span 
             v-for="keyword in content.keywords" :key="keyword" 
             class="p-1">
-            <Tag :value="keyword" />
+            <PButton :label="keyword"
+              class="tag-button"
+            />
           </span>
           <span
             v-for="eoMission in eoMissions" :key="eoMission.short_name"
             class="p-1">
-            <!-- <Tag 
-              :value="eoMission.short_name" 
-              severity="danger" 
-              v-tooltip="eoMission.full_name" 
-            /> -->
             <PButton
+              class="tag-button"
               :label="eoMission.short_name"
               severity="danger"
               @click="eoMissionDetailClicked(eoMission)"
@@ -110,26 +112,23 @@
           <span
             v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
             class="p-1" >
-            <!-- <Tag 
-              :value="eoInstrument.short_name" 
-              severity="success" 
-              v-tooltip="eoInstrument.full_name"
-            /> -->
             <PButton
+              class="tag-button"
               :label="eoInstrument.short_name"
               severity="success"
               @click="eoInstrumentDetailClicked(eoInstrument)"
             />
           </span>
-          <Tag 
-            v-if="spatialExtentCoversGlobe"
-            class="m-1"
-            value="Global"
-            severity="info"
-            v-tooltip="'STAC Collection covers the whole globe'"
-            icon="pi pi-globe"
-          />
-          
+          <span class="p-1">
+            <PButton 
+              v-if="spatialExtentCoversGlobe"
+              class="tag-button"
+              label="Global"
+              severity="info"
+              v-tooltip="'STAC Collection covers the whole globe'"
+              icon="pi pi-globe"
+            />
+          </span>
           <p ref="descriptionRef"
             align="left" 
             :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
@@ -229,7 +228,7 @@
 
 import Card from 'primevue/card';
 import DataView from 'primevue/dataview';
-import Tag from 'primevue/tag';
+// import Tag from 'primevue/tag';
 // import DynamicDialog from 'primevue/dynamicdialog';
 import Dialog from 'primevue/dialog';
 
@@ -239,7 +238,7 @@ export default {
 
   components: {
     Card,
-    Tag,
+    // Tag,
     DataView, 
     // DynamicDialog, 
     Dialog, 
@@ -496,9 +495,13 @@ export default {
   margin: 3px;
 }
 
-.pad-right {
+.label {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
   padding-right: 0.5rem;
 }
+
+
 
 
 </style>

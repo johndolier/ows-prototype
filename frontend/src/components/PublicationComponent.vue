@@ -7,9 +7,9 @@
     </template>
     <template #content>
       <div class="w-full">
-        <Tag 
+        <PButton 
           class="p-1" 
-          value="Publication" 
+          label="Publication" 
           severity="warning"
         />
         <!-- TODO style keywords - make them clickable -->
@@ -17,13 +17,16 @@
           v-for="keyword in content.keywords" :key="keyword" 
           class="p-1"
           >
-          <Tag :value="keyword" />
+          <PButton :label="keyword" 
+            class="tag-button"
+          />
         </span>
         <span
           v-for="eoMission in eoMissions" :key="eoMission.short_name"
           class="p-1">
-          <Tag 
-            :value="eoMission.short_name" 
+          <PButton 
+            class="tag-button"
+            :label="eoMission.short_name" 
             severity="danger" 
             v-tooltip="eoMission.full_name" 
           />
@@ -31,8 +34,9 @@
         <span
           v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
           class="p-1" >
-          <Tag 
-            :value="eoInstrument.short_name" 
+          <PButton 
+            class="tag-button"
+            :label="eoInstrument.short_name" 
             severity="success" 
             v-tooltip="eoInstrument.full_name"
           />
@@ -58,7 +62,7 @@
 <script>
 
 import Card from 'primevue/card';
-import Tag from 'primevue/tag';
+// import Tag from 'primevue/tag';
 
 export default {
 
@@ -66,7 +70,7 @@ export default {
 
   components: {
     Card, 
-    Tag, 
+    // Tag, 
   }, 
   props: {
     content: Object, 

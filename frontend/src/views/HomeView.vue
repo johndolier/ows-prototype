@@ -54,7 +54,7 @@
         id="appHeader" 
         class="text-xl font-bold py-4 bg-primary">
         <header>
-          OpenSearch@DLR Prototype
+          OpenSearch@DLR (Prototype Development)
         </header>
       </div>
       <!-- START SCREEN -->
