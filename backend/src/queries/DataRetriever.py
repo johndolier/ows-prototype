@@ -161,7 +161,9 @@ class DataRetriever:
             score = doc.get('score', 10)
             stac['score'] = score
             eo_objects = doc.get('eo_objects', [])
-            stac['eo_objects'] = self.__transform_eo_objects(eo_objects)
+            eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
+            stac['eo_missions'] = eo_missions
+            stac['eo_instruments'] = eo_instruments
             stac['loading'] = False # hack for frontend 
             stac['stac_items'] = [] # hack for frontend
             transformed_results.append(stac)
@@ -209,7 +211,9 @@ class DataRetriever:
             score = doc.get('score', 0)
             pub['score'] = score
             eo_objects = doc.get('eo_objects', [])
-            pub['eo_objects'] = self.__transform_eo_objects(eo_objects)
+            eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
+            pub['eo_missions'] = eo_missions
+            pub['eo_instruments'] = eo_instruments
             transformed_results.append(pub)
 
         return transformed_results
@@ -453,32 +457,42 @@ time_range = [time_start, time_end]
         except:
             return None
     
-    def __transform_eo_objects(self, eo_objects:list) -> list[dict]:
+    def __get_transformed_eo_objects(self, eo_objects:list) -> list[dict]:
         '''
             Transform EO objects to fit standardized interface
+            Returns a list of EO Missions and EO Instruments
         '''
-        transformed_list = []
-        for eo_object in eo_objects:
-            split_id = eo_object.get('id').split('/')
-            eo_type = split_id[0]
-            id = split_id[1]
-            
+        eo_missions = []
+        eo_instruments = []
+        for eo_object_dict in eo_objects:
+            eo_object = eo_object_dict.get('node', {})
+            if not eo_object: continue
+            eo_type = eo_object.get('_id').split('/')[0]
             if eo_type == 'EOMission':
-                full_name = eo_object.get('mission_name_full')
-                short_name = eo_object.get('mission_name_short')
+                eo_missions.append({
+                    'id': eo_object.get('_id'),
+                    'full_name':  eo_object.get('mission_name_full'), 
+                    'short_name': eo_object.get('mission_name_short'), 
+                    'data_access_portal': eo_object.get('data_access_portal'), 
+                    'mission_agencies': eo_object.get('mission_agencies'), 
+                    'mission_site': eo_object.get('mission_site'), 
+                })
             elif eo_type == 'EOInstrument':
-                full_name = eo_object.get('instrument_name_full')
-                short_name = eo_object.get('instrument_name_short')
+                eo_instruments.append({
+                    'id': eo_object.get('_id'),
+                    'full_name': eo_object.get('instrument_name_full'), 
+                    'short_name': eo_object.get('instrument_name_short'), 
+                    'description': eo_object.get('description'), 
+                    'instrument_agencies': eo_object.get('instrument_agencies'), 
+                    'instrument_status': eo_object.get('instrument_status'), 
+                    'instrument_type': eo_object.get('instrument_type'), 
+                    'instrument_technology': eo_object.get('instrument_technology'), 
+                    'waveband_categories': eo_object.get('waveband_categories'), 
+                })
             else:
                 print(f"ERROR - unknown eo type {eo_type}")
-                return []
+                continue
             
-            transformed_list.append({
-                'id': id, 
-                'full_name': full_name,
-                'short_name': short_name, 
-                'type': eo_type,
-            })
-        return transformed_list
+        return eo_missions, eo_instruments
 
 

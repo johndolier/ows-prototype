@@ -66,15 +66,7 @@ LET pubs_fuzzy = (
 FOR node in pubs_fuzzy 
     LET conn_eo_objects = (
         FOR v in OUTBOUND node.pub._id Mentions
-            RETURN {
-                id: v._id, 
-                instrument_name_full: 
-                v.instrument_name_full, 
-                instrument_name_short: 
-                v.instrument_name_short, 
-                mission_name_full: v.mission_name_full, 
-                mission_name_short: v.mission_name_short
-            }
+            RETURN {node: v}
     )
 
     RETURN {pub:node.pub, score:node.score, eo_objects:conn_eo_objects}
@@ -117,15 +109,7 @@ LET stac_fuzzy = (
 FOR node in stac_fuzzy 
     LET conn_eo_objects = (
         FOR v in OUTBOUND node.stac._id Mentions
-            RETURN {
-                id: v._id, 
-                instrument_name_full: 
-                v.instrument_name_full, 
-                instrument_name_short: 
-                v.instrument_name_short, 
-                mission_name_full: v.mission_name_full, 
-                mission_name_short: v.mission_name_short
-            }
+            RETURN {node: v}
     )
     RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects}
 """
@@ -170,15 +154,7 @@ SIMPLE_STAC_EMB_QUERY = """
     FOR node in stac_fuzzy 
         LET conn_eo_objects = (
             FOR v in OUTBOUND node.stac._id Mentions
-            RETURN {
-                id: v._id, 
-                instrument_name_full: 
-                v.instrument_name_full, 
-                instrument_name_short: 
-                v.instrument_name_short, 
-                mission_name_full: v.mission_name_full, 
-                mission_name_short: v.mission_name_short
-            }
+            RETURN {node: v}
         )
         RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects}
 """

@@ -181,23 +181,11 @@ export default {
   computed: {
     eoMissions() {
       // returns a list of EO missions that are present in the STAC collection
-      let eoMissions = [];
-      for (const eoMission of this.content.eo_objects) {
-        if (eoMission.type == 'EOMission') {
-          eoMissions.push(eoMission);
-        }
-      }
-      return eoMissions;
+      return this.content.eo_missions;
     }, 
     eoInstruments() {
       // returns a list of EO instruments that are present in the STAC collection
-      let eoInstruments = [];
-      for (const eoInstrument of this.content.eo_objects) {
-        if (eoInstrument.type == 'EOInstrument') {
-          eoInstruments.push(eoInstrument);
-        }
-      }
-      return eoInstruments;
+      return this.content.eo_instruments;
     }, 
     stacItems() {
       // stacItems is a dictionary of STAC item requests performed on this STAC collection
