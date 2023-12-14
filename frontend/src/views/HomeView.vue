@@ -598,6 +598,7 @@ export default {
         console.log("warning - cannot display geotweets because map was not created");
         return;
       }
+      this.focusOnMap();
       this.$refs.mapRef.showGeotweets(response.data);
     }, 
   }, 
