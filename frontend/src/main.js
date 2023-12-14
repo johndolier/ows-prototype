@@ -74,7 +74,10 @@ import Tooltip from 'primevue/tooltip';
 app.directive('tooltip', Tooltip);
 
 
-axios.defaults.withCredentials = true;
+// `withCredentials` indicates whether or not cross-site Access-Control requests
+// should be made using credentials (disable if FastAPI backend specified wildcard ('*') in CORS policy)
+// enable if FastAPI backend specified list of URLs in CORS policy
+axios.defaults.withCredentials = false;
 // FastAPI backend
 const BACKEND_URL = "http://localhost:5000/"
 axios.defaults.baseURL = BACKEND_URL; 

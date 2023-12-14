@@ -63,17 +63,17 @@ else:
 app = FastAPI()
 
 
-# TODO: check if this is the correct way to do this
-origins = [
-    "http://localhost",
-    frontend_url, 
-    "http://localhost:8080", 
-]
+# CURRENTLY, CORS IS ENABLED FOR ALL ORIGINS (FOR DEVELOPMENT PURPOSES)
+# origins = [
+#     "http://localhost",
+#     frontend_url, 
+#     "http://localhost:8080", 
+# ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
