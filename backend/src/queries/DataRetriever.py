@@ -4,7 +4,7 @@ import pystac_client
 import geojson
 import planetary_computer
 from pyArango.connection import DBHandle
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 import nbformat as nbf
 
 
@@ -137,16 +137,16 @@ class DataRetriever:
         # query = query.strip()
         
 
-        model = SentenceTransformer('msmarco-distilbert-base-v4')
-        query_embedding = model.encode(query).tolist()
+        # model = SentenceTransformer('msmarco-distilbert-base-v4')
+        # query_embedding = model.encode(query).tolist()
         query_params = {
-            #'query': keyword_query, 
-            'query_embedding': query_embedding,  
+            'query': query, 
+            #'query_embedding': query_embedding,  
             #'limit': limit, 
-            'sim_threshold': 0.1, 
+            'sim_score': 0.5, 
         }
         try:
-            result = self.db.AQLQuery(SIMPLE_STAC_EMB_QUERY, bindVars=query_params, rawResults=True)
+            result = self.db.AQLQuery(SIMPLE_STAC_ARANGOSEARCH_QUERY, bindVars=query_params, rawResults=True)
         except Exception as e:
             print(e)
             result = []

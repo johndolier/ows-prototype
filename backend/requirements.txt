@@ -8,7 +8,7 @@ planetary-computer==1.0.0
 geojson==3.1.0
 geocoder==1.38.1
 pyyaml==6.0.1
-sentence-transformers==2.2.2
+#sentence-transformers==2.2.2
 python-arango==7.8.1
 cag==1.5.17
 nbformat==5.9.2

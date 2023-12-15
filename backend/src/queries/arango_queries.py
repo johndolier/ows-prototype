@@ -76,7 +76,7 @@ FOR node in pubs_fuzzy
 '''
 SIMPLE_STAC_ARANGOSEARCH_QUERY:
     query: keyword query
-    limit: maximum number of documents to return
+    limit: maximum number of documents to return (not used currently)
     sim_score: controls the strictness of the matching (high sim_score -> only nodes that really match the keyword query are returned) [0,1]
 
     Returns STAC collection nodes that are similar to the query; uses arangosearch indexing (ngrams, levenshtein distance) for search
@@ -102,7 +102,7 @@ LET stac_fuzzy = (
             OR BOOST(PHRASE(v.title, phraseStructure, 'en_tokenizer'), 10)
             OR BOOST(PHRASE(v.description, phraseStructure, 'en_tokenizer'), 10)
         SORT BM25(v) DESC  
-        LIMIT @limit
+        // LIMIT @limit
         RETURN {stac:v, score: BM25(v)}
 )
 
@@ -118,7 +118,7 @@ FOR node in stac_fuzzy
 '''
 SIMPLE_STAC_EMB_QUERY:
     query_embedding: list of floats (embedding) from SentenceTransformer model
-    limit: maximum number of documents to return
+    limit: maximum number of documents to return (not used currently)
     sim_threshold: threshold to cut of for cosine similarity
 
     Returns STAC collection nodes that are similar to the query; uses text embedding vector similarity for search (semantic search)

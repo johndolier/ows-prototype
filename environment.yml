@@ -16,5 +16,4 @@ dependencies:
     - geojson
     - geocoder
     - parsedatetime
-    - sentence-transformers
   
