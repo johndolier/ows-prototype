@@ -32,6 +32,7 @@ with open('src/config.yml', 'r') as file:
 
     web_api_key = config['web_api_key']
     geonames_username = config['geonames_username']
+    web_api = config.get('web_api', 2) # default is Chatnoir (=2)
 
     arango_username = arango_config.get('username')
     arango_password = arango_config.get('password')
@@ -83,7 +84,7 @@ app.add_middleware(
 qa = QueryAnalyzer(geonames_username='johndolier')
 
 # create DataRetriever object
-data_retriever = DataRetriever(web_api_key=web_api_key, db_instance=db, graph_name=graph_name)
+data_retriever = DataRetriever(web_api_key=web_api_key, db_instance=db, graph_name=graph_name, web_api=web_api)
 
 # DEFINE ENDPOINTS
 

@@ -205,7 +205,7 @@ export default {
 
   mounted() {
     // check if description text overflows the <p> element (with some margin)
-    if (this.$refs.abstractRef.scrollHeight > (this.$refs.abstractRef.clientHeight + 5)) {
+    if (this.$refs.abstractRef && this.$refs.abstractRef.scrollHeight > (this.$refs.abstractRef.clientHeight + 5)) {
       this.abstractOverflown = true;
     }
   }

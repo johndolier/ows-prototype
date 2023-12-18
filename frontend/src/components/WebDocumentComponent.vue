@@ -87,7 +87,7 @@ export default {
 
   mounted() {
     // check if content text overflows the <p> element (with some margin)
-      if (this.$refs.contentRef.scrollHeight > (this.$refs.contentRef.clientHeight + 5)) {
+    if (this.$refs.contentRef && this.$refs.contentRef.scrollHeight > (this.$refs.contentRef.clientHeight + 5)) {
       this.contentOverflown = true;
     }
   }
