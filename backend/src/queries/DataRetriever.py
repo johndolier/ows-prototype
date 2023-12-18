@@ -22,17 +22,27 @@ GEOSERVICE_API = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
 
 class DataRetriever:
-    def __init__(self, web_api_key:str, db_instance:DBHandle, graph_name:str) -> None:
+    def __init__(self, web_api_key:str, db_instance:DBHandle, graph_name:str, web_api:int) -> None:
         self.api_key = web_api_key
         self.db = db_instance
         self.graph_name = graph_name
         
+        if web_api == 1:
+            # chatnoir
+            print("DataRetriever - using chatnoir web index")
+            self.index_source = "chatnoir"
+        elif web_api == 2:
+            # prototype webindex
+            print("DataRetriever - using prototype web index")
+            self.index_source = "prototype_webindex"
+        else:
+            # default
+            print("Error - invalid web api source!")
+            print("Using chatnoir web index")
+            self.index_source = "chatnoir"
+        
         # fetch STAC source information
         self.stac_source_dict = self.__fetch_stac_source_information()
-
-        # uncomment one of the following lines to use the preferred web index
-        self.index_source = "chatnoir"
-        #self.index_source = "prototype_webindex"
 
 
     def make_web_query(self, query:str, limit:int, verbose:bool=False):
@@ -256,9 +266,13 @@ class DataRetriever:
             'pretty': True, 
         }
         response = requests.post(CHATNOIR_ENDPOINT, json.dumps(body))
-    
         try:
-            response_dict = json.loads(response.text)
+            if response.status_code > 500 and response.status_code < 600:
+                # SERVER ERROR
+                print(f"Server error (Chatnoir) - status code {response.status_code}")
+                response_dict = {}
+            else:
+                response_dict = json.loads(response.text)
         except Exception as e:
             print(f"Exception in parsing response - {e}")
             print(f"Status code: {response.status_code}")
