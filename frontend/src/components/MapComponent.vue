@@ -1,11 +1,18 @@
 <template>
   <div>
-    <div class="mx-2">
+    <div class="mx-1">
       <PButton
         class="right-button"
         :icon="showMap ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
         :label="showMap ? 'Hide Map' : 'Show Map'"
         @click="this.$emit('showMapClicked')"
+      />
+      <PButton v-if="showMap"
+        class="right-button mx-1"
+        :icon="fixMap ? 'pi pi-lock' : 'pi pi-unlock'"
+        :severity="fixMap ? 'danger' : 'success'" 
+        v-tooltip="fixMap ? 'Unfix map' : 'Fix map'" 
+        @click="this.$emit('fixMapClicked')"
       />
     </div>
     <div 
@@ -73,12 +80,14 @@ export default {
     documents: Object, // object that holds all documents that should eventually be displayed in the Map component
     stacItems: Object, // object that holds all stac items that have been queried + meta data if it should be displayed etc...
     initialFocusList: Object, // initial focus coordinates when starting the map
-    showMap: Boolean // controls whether the div element is hidden or not
+    showMap: Boolean, // controls whether the div element is hidden or not
+    fixMap: Boolean, // controls whether the map is fixed or not
   },
   inject: ['Utils'],
   emits: [
     'stacItemClicked', // triggers highlighting of stac item in document list
-    'showMapClicked'
+    'showMapClicked', 
+    'fixMapClicked', 
   //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
   components: {},

@@ -97,14 +97,16 @@
         </div>
         <div class="right-column">
           <MapComponent 
-            id="mapComponent" 
+            :class="fixMap ? 'mapComponentFixed surface-ground' : 'mapComponentNormal'"
             ref="mapRef"
             :documents="documents" 
             :stacItems="stacItems" 
             :initial-focus-list="initialFocusList"
             :show-map="showMap"
+            :fix-map="fixMap"
             @show-map-clicked="showMapClicked"
             @stacItemClicked="stacItemClicked"
+            @fixMapClicked="fixMapClicked" 
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
@@ -186,6 +188,7 @@ export default {
       showAdvancedSearch: false, 
       // control which elements are shown
       showMap: true, 
+      fixMap: false, 
       showTopSTACResults: true, 
       showTopPublicationResults: true, 
 
@@ -244,6 +247,9 @@ export default {
         this.$refs.mapRef.focusMapOnLocationsList(locations);
       }
     }, 
+    fixMapClicked() {
+      this.fixMap = !this.fixMap;
+    }, 
     // STAC item handler methods
     stacItemClicked(stacCollectionID, requestUID, stacItemID) {
       // STAC item was clicked in map component -> set highlightID to indicate which one was clicked
@@ -282,6 +288,9 @@ export default {
     }, 
     showMapClicked() {
       this.showMap = !this.showMap;
+      if (!this.showMap) {
+        this.fixMap = false;
+      }
     }, 
     clearTimeSelection() {
       this.timeRangeFilter = [];
@@ -639,11 +648,27 @@ export default {
 }
 
 #mapComponent {
-    /* height: 85vh; */
     width: 100%;
     margin-left: auto;
     margin-right:0.5rem;
     padding: 1.0rem;
+}
+
+.mapComponentNormal {
+    width: 100%;
+    margin-left: auto;
+    margin-right:0.5rem;
+    padding: 1.0rem;
+    z-index: 1;
+}
+
+.mapComponentFixed {
+    position: fixed;
+    width: 91vh;
+    height:100vh;
+    padding-top: 1.0rem;
+    z-index: 1;
+    right:0
 }
 
 .topResultListComponent {
