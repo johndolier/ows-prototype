@@ -67,20 +67,17 @@ class DataRetriever:
         location_filter = self.__get_geojson_from_location_filters(location_filter)
         time_interval = self.__get_time_interval(time_interval)
         
-        search_items = catalog.search(
+        search = catalog.search(
             max_items = limit, 
             collections = stac_collection_id, 
             intersects = location_filter, 
             datetime = time_interval, 
         )
-        search_items = list(search_items.items())
-        items_list = []
+        
         # found items in planetary computer
-        for item in search_items:
-            item_api_str = f"{api_link}/collections/{stac_collection_id}/items/{item.id}"
-            #print(f"send get request to {item_api_str}")
-            response = requests.get(item_api_str)
-            item_dict = json.loads(response.text)
+        items_list = []
+        for item in search.items():
+            item_dict = item.to_dict()
             try:
                 # catalogs have different paths to access preview img -> temporary solution: hardcoded paths
                 if stac_source == 'planetary_computer_collections':
