@@ -1,11 +1,18 @@
 <template>
   <div>
-    <div class="mx-2">
+    <div class="mx-1">
       <PButton
         class="right-button"
         :icon="showMap ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
         :label="showMap ? 'Hide Map' : 'Show Map'"
         @click="this.$emit('showMapClicked')"
+      />
+      <PButton v-if="showMap"
+        class="right-button mx-1"
+        :icon="fixMap ? 'pi pi-lock' : 'pi pi-unlock'"
+        :severity="fixMap ? 'danger' : 'success'" 
+        v-tooltip="fixMap ? 'Unfix map' : 'Fix map'" 
+        @click="this.$emit('fixMapClicked')"
       />
     </div>
     <div 
@@ -66,6 +73,8 @@ useScriptTag('leaflet-heat.js');
 
 require('leaflet-draw');
 
+import { toRaw } from 'vue';
+
 export default {
 
   name: "MapComponent",
@@ -73,12 +82,14 @@ export default {
     documents: Object, // object that holds all documents that should eventually be displayed in the Map component
     stacItems: Object, // object that holds all stac items that have been queried + meta data if it should be displayed etc...
     initialFocusList: Object, // initial focus coordinates when starting the map
-    showMap: Boolean // controls whether the div element is hidden or not
+    showMap: Boolean, // controls whether the div element is hidden or not
+    fixMap: Boolean, // controls whether the map is fixed or not
   },
   inject: ['Utils'],
   emits: [
     'stacItemClicked', // triggers highlighting of stac item in document list
-    'showMapClicked'
+    'showMapClicked', 
+    'fixMapClicked', 
   //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
   components: {},
@@ -91,9 +102,11 @@ export default {
       map: null,
       // map layers
       stacCollectionLayers: {},
-      drawnLayers: null, 
-      heatLayer: null, 
-      spatialExtent: null, 
+      drawnLayers: null, // FeatureGroup
+      heatLayer: null, // Layer 
+      spatialExtentLayer: null, // FeatureGroup
+      // layer control
+      layerControl: null,
       // draw controller
       drawControl: null,
       polygonDrawer: null,
@@ -160,26 +173,22 @@ export default {
       this.stacCollectionLayers = {};
 
       // remove heatmap layer
-      if (this.heatLayer !== null) {
-        this.map.removeLayer(this.heatLayer);
+      if (this.heatLayer) {
+        this.heatLayer.remove();
       }
-      this.heatLayer = null;
       // remove spatial extent layer
       this.clearSpatialExtent();
     }, 
     clearSpatialExtent() {
-      if (this.spatialExtent !== null) {
-        for (const layer of this.spatialExtent.getLayers()) {
-          this.map.removeLayer(layer);
-        }
+      if (this.spatialExtentLayer) {
+        this.spatialExtentLayer.clearLayers();
       }
-      this.spatialExtent = null;
+      
     }, 
     clearSTACLayers() {
       for (const stacCollectionID in this.stacCollectionLayers) {
         for (const requestUID in this.stacCollectionLayers[stacCollectionID]) {
-          const layer = this.stacCollectionLayers[stacCollectionID][requestUID];
-          this.map.removeLayer(layer);
+          this.stacCollectionLayers[stacCollectionID][requestUID].remove();
         }
       }
     }, 
@@ -203,38 +212,30 @@ export default {
     showSpatialExtent(bboxList) {
       // clear old spatial extent layer
       this.clearSpatialExtent();
-
       if (bboxList.length == 0) {
         // focus globally if no other bbox is specified
         this.focusGlobal();
         return;
       }
-      // create new spatial extent layer
-      const spatialExtentFeatureGroup = new L.FeatureGroup();
       let foundBBox = false;
       for (const bbox of bboxList) {
         // check if bbox covers the whole map
         foundBBox = true;
         const bounds = this.getBoundsFromBBox(bbox);
-        const layer = new L.Rectangle(bounds, {
-          color: 'red', 
+        L.rectangle(bounds, {
+          color: 'yellow', 
           weight: 1
-        });
-        spatialExtentFeatureGroup.addLayer(layer);
+        }).addTo(this.spatialExtentLayer);
       }
       if (foundBBox) {
         // focus on feature group
-        this.map.fitBounds(spatialExtentFeatureGroup.getBounds(), {'animate': true});
-        // add to map
-        spatialExtentFeatureGroup.addTo(this.map);
+        this.map.fitBounds(this.spatialExtentLayer.getBounds(), {'animate': true});
       }
-      this.spatialExtent = spatialExtentFeatureGroup;
-
     }, 
     focusMapOnSTACLayer(stacCollectionID, requestUID) {
       if (stacCollectionID in this.stacCollectionLayers && requestUID in this.stacCollectionLayers[stacCollectionID]) {
-        const featureGroup = this.stacCollectionLayers[stacCollectionID][requestUID];
-        this.map.fitBounds(featureGroup.getBounds(), {'animate': true});
+        const bounds = this.stacCollectionLayers[stacCollectionID][requestUID].getBounds();
+        this.map.fitBounds(bounds, {'animate': true});
       }
       else {
         console.log("cannot find feature group for stacCollectionID " + stacCollectionID + " and requestUID " + requestUID);
@@ -284,7 +285,6 @@ export default {
     showGeotweets(geotweets) {
 
       // display geotweets
-      // var geojsonLayer = L.geoJSON().addTo(this.map);
       let tweetLatLongList = [];
       // get center of point cloud
       let xMean = 0;
@@ -320,29 +320,57 @@ export default {
           maxZoom: 3,
           radius: 12, 
           //gradient: {0.4: 'blue', 0.65: 'lime', 1: 'red'}, 
-          minOpacity: 0.3, 
+          minOpacity: 0.3,
         }
-      );
-      this.heatLayer.addTo(this.map);
+      ).addTo(toRaw(this.map));
     }, 
     async createMap() {
       // this function is called to create a new map instance and initiate "this.map"
       const defaultFocus = [45, 20];
       const defaultZoom = 5;
       await this.waitForElm('#mapContainer');
+
+      // create base layers
+      var osm = L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      });
+      var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      });
+
+      // create map
       this.map = L.map("mapContainer", { 
         drawControl: false, 
         minZoom: 3, 
         maxZoom: 10,
+        layers: [osm, Esri_WorldImagery],
       }).setView(defaultFocus, defaultZoom);
-      L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(this.map);
 
-      // enable drawing shapes on map
-      // FeatureGroup is to store editable layers
+      // drawnLayers stores all drawn layers (e.g. filter areas)
       this.drawnLayers = new L.FeatureGroup();
-      this.map.addLayer(this.drawnLayers);
+      this.drawnLayers.addTo(toRaw(this.map));
+
+      // add spatial extent layer
+      this.spatialExtentLayer = new L.FeatureGroup();
+      this.spatialExtentLayer.addTo(toRaw(this.map));
+
+      // add layer control
+      // first, create base maps
+      const baseMaps = {
+        "OpenStreetMap": osm, 
+        'Esri World Imagery': Esri_WorldImagery,
+      };
+      // second, create overlay maps
+      const overlayMaps = {
+        "Filter Layer": this.drawnLayers,
+        "Spatial Extent": this.spatialExtentLayer,
+      }
+
+      this.layerControl = L.control.layers(baseMaps, overlayMaps).addTo(toRaw(this.map));
+
+      // add draw control
       this.drawControl = new L.Control.Draw({
         position: 'topright', 
         draw: {
@@ -357,10 +385,11 @@ export default {
           featureGroup: this.drawnLayers
         }
       });
-      this.map.addControl(this.drawControl);
+      this.drawControl.addTo(toRaw(this.map));
 
-      this.polygonDrawer = new L.Draw.Polygon(this.map);
-      this.rectangleDrawer = new L.Draw.Rectangle(this.map);
+      // add draw handlers
+      this.polygonDrawer = new L.Draw.Polygon(toRaw(this.map));
+      this.rectangleDrawer = new L.Draw.Rectangle(toRaw(this.map));
 
       // add event listeners
       this.map.on(L.Draw.Event.DRAWSTART, () => {
@@ -373,7 +402,7 @@ export default {
       this.map.on(L.Draw.Event.CREATED, e => {
 
         e.layer.setStyle({
-          color: 'red', 
+          color: 'green', 
         });
         
         // handle different shapes (rectangle, polygon)
@@ -442,16 +471,16 @@ export default {
             }
             // create layer for each entry
             const newFeatureGroup = new L.FeatureGroup();
-            let color = 'red';
+            let color = 'blue';
             for (const stacItemID in requestDict.stacItems) {
               const stacItem = requestDict.stacItems[stacItemID]
               // console.log(stacItemID);
               if (stacItemID == requestDict.highlightID) {
-                color = 'blue';
+                color = 'red';
                 // console.log("highlighting stac item: " + stacItemID);
               }
               else {
-                color = 'red';
+                color = 'blue';
                 // console.log("not highlighting stac item: " + stacItemID);
               }
               const layer = new L.GeoJSON(stacItem, {
@@ -468,11 +497,6 @@ export default {
               });
               newFeatureGroup.addLayer(layer);
             }
-            // newFeatureGroup.setStyle(
-            //   function() {
-            //     return {color: color}
-            //   }
-            // );
 
             // add layer to stacCollectionLayers
             if (this.stacCollectionLayers[stacCollectionID] == null) {
@@ -481,7 +505,7 @@ export default {
             this.stacCollectionLayers[stacCollectionID][requestUID] = newFeatureGroup;
 
             // add layer to map
-            newFeatureGroup.addTo(this.map);  
+            newFeatureGroup.addTo(toRaw(this.map));  
           }
         } 
       }, 
