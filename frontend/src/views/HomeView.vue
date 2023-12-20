@@ -563,7 +563,7 @@ export default {
       const path = '/stacItemRequest';
       const request = {
         'collection_id': stacCollectionId, 
-        'limit': 5, 
+        'limit': 500, 
         'location_filter': locationFilter, 
         'time_interval': timeInterval
       };
