@@ -156,7 +156,11 @@ SIMPLE_STAC_EMB_QUERY = """
             FOR v in OUTBOUND node.stac._id Mentions
             RETURN {node: v}
         )
-        RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects}
+        LET stac_source = (
+            FOR v in INBOUND node.stac._id STACSourceContains
+            RETURN {name: v.name, link: v.href}
+        )
+        RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects, stac_source:stac_source}
 """
 
 '''
