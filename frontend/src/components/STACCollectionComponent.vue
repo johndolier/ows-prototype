@@ -17,7 +17,7 @@
           severity="danger"
           label="Go To Mission Site"
           size="large"
-          @click="openMissionSite(eoMissionDetail.mission_site)"
+          @click="openSite(eoMissionDetail.mission_site)"
         />
       </div>
       <div>
@@ -91,6 +91,27 @@
             label="STAC Collection" 
             severity="warning" 
           />
+          <PButton 
+            class="tag-button mx-2" 
+            label="External Links" 
+            severity="info"
+            @click="showExternalLinksClicked"
+          />
+          <OverlayPanel 
+            ref="link_op"
+          >
+            <div v-for="link in content.links" :key="link">
+              <div v-if="link.title">
+                <PButton 
+                  class="tag-button" 
+                  :label="link.title"
+                  severity="info"
+                  link
+                  @click="openSite(link.href)"
+                />
+              </div>
+            </div>
+          </OverlayPanel>
           <span 
             v-for="keyword in content.keywords" :key="keyword" 
             class="p-1">
@@ -405,10 +426,13 @@ export default {
       this.eoInstrumentDetail = eoInstrument;
       this.showEOInstrumentDetail = true;
     },
-    openMissionSite(missionSite) {
+    openSite(site) {
       // open mission site in new tab
-      window.open(missionSite);
+      window.open(site);
     },
+    showExternalLinksClicked(event) {
+      this.$refs.link_op.toggle(event);
+    }
   },
 
   mounted() {
