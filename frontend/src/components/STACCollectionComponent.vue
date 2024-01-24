@@ -17,7 +17,7 @@
           severity="danger"
           label="Go To Mission Site"
           size="large"
-          @click="openMissionSite(eoMissionDetail.mission_site)"
+          @click="openSite(eoMissionDetail.mission_site)"
         />
       </div>
       <div>
@@ -85,50 +85,74 @@
         </div> 
       </template>
       <template #content>
-        <div class="w-8 mx-3 left-block">
-          <PButton 
-            class="tag-button" 
-            label="STAC Collection" 
-            severity="warning" 
-          />
-          <span 
-            v-for="keyword in content.keywords" :key="keyword" 
-            class="p-1">
-            <PButton :label="keyword"
-              class="tag-button"
-              @click="keywordClicked(keyword)"
+        <div class="w-8 left-block">
+          <div>
+            <PButton 
+              class="tag-button mx-1" 
+              :label="content.stac_source.name" 
+              severity="warning" 
+              @click="openSite(content.stac_source.link)"
             />
-          </span>
-          <span
-            v-for="eoMission in eoMissions" :key="eoMission.short_name"
-            class="p-1">
-            <PButton
-              class="tag-button"
-              :label="eoMission.short_name"
-              severity="danger"
-              @click="eoMissionDetailClicked(eoMission)"
+            <PButton 
+              class="tag-button mx-1" 
+              label="External Links" 
+              severity="info"
+              @click="showExternalLinksClicked"
             />
-          </span>
-          <span
-            v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
-            class="p-1" >
-            <PButton
-              class="tag-button"
-              :label="eoInstrument.short_name"
-              severity="success"
-              @click="eoInstrumentDetailClicked(eoInstrument)"
-            />
-          </span>
-          <span class="p-1">
+            <OverlayPanel 
+              ref="link_op"
+            >
+              <div v-for="link in content.links" :key="link">
+                <div v-if="link.title">
+                  <PButton 
+                    class="tag-button" 
+                    :label="link.title"
+                    severity="info"
+                    link
+                    @click="openSite(link.href)"
+                  />
+                </div>
+              </div>
+            </OverlayPanel>
             <PButton 
               v-if="spatialExtentCoversGlobe"
-              class="tag-button"
+              class="tag-button mx-1"
               label="Global"
-              severity="info"
+              severity="success"
               v-tooltip="'STAC Collection covers the whole globe'"
               icon="pi pi-globe"
             />
-          </span>
+            <span
+              v-for="eoMission in eoMissions" :key="eoMission.short_name"
+              class="p-1">
+              <PButton
+                class="tag-button"
+                :label="eoMission.short_name"
+                severity="danger"
+                @click="eoMissionDetailClicked(eoMission)"
+              />
+            </span>
+            <span
+              v-for="eoInstrument in eoInstruments" :key="eoInstrument.short_name" 
+              class="p-1" >
+              <PButton
+                class="tag-button"
+                :label="eoInstrument.short_name"
+                severity="success"
+                @click="eoInstrumentDetailClicked(eoInstrument)"
+              />
+            </span>
+          </div>
+          <div>
+            <span 
+              v-for="keyword in content.keywords" :key="keyword" 
+              class="p-1">
+              <PButton :label="keyword"
+                class="tag-button"
+                @click="keywordClicked(keyword)"
+              />
+            </span>
+          </div>
           <p ref="descriptionRef"
             align="left" 
             :class="{'more-text' : showMore, 'less-text' : (!showMore && normalStyle), 'no-text': (!showMore && !normalStyle)}"
@@ -142,7 +166,8 @@
           />
         </div>
         <div class="w-3 right-block">
-          <PButton v-if="normalStyle"
+          <div>
+            <PButton v-if="normalStyle"
             label="Request STAC items" 
             @click="submitStacItemQuery" 
             icon="pi pi-cloud-download"
@@ -150,29 +175,43 @@
             size="small" 
             severity="danger"
             :loading="stacItemsLoading"
-            class="w-3 m-1" 
+            class="stac-button" 
           />
           <PButton v-if="normalStyle"
             label="STAC Notebook Download" 
             @click="downloadSTACNotebook" 
             icon="pi pi-download"
-            icon-pos="right"
+            icon-pos="left"
             size="small" 
             severity="help" 
-            class="w-4 m-1" 
+            class="stac-button" 
           />
-          <PButton v-if="normalStyle"
+          </div>
+          <div>
+            <PButton v-if="normalStyle"
             label="Show Spatial Extent"
             size="small"
             severity="info"
             icon="pi pi-map"
             icon-pos="right"
-            class="w-3 m-1"
+            class="stac-button"
             @click="showSpatialExtent"
           />
+          <PButton v-if="tutorialLink && normalStyle" 
+              class="stac-button"
+              size="small"
+              label="STAC Notebook Tutorial"
+              icon-pos="left"
+              icon="pi pi-star"
+              severity="success"
+              @click="openSite(tutorialLink)"
+            />
           <img class="thumbnail-img" 
             :src="content.assets.thumbnail.href"
           />
+          </div>
+
+
         </div>
         <div v-if="stacItemsPresent">
           <div class="overflow-hidden">
@@ -354,6 +393,13 @@ export default {
       }
       return false;
     },
+    tutorialLink() {
+      if (this.content.stac_source.name == 'Planetary Computer') {
+        return 'https://planetarycomputer.microsoft.com/dataset/' + this.content._key + '#Example-Notebook'
+      } else {
+        return null;
+      }
+    }
   }, 
 
   methods: {
@@ -405,10 +451,13 @@ export default {
       this.eoInstrumentDetail = eoInstrument;
       this.showEOInstrumentDetail = true;
     },
-    openMissionSite(missionSite) {
+    openSite(site) {
       // open mission site in new tab
-      window.open(missionSite);
+      window.open(site);
     },
+    showExternalLinksClicked(event) {
+      this.$refs.link_op.toggle(event);
+    }
   },
 
   mounted() {
@@ -455,6 +504,7 @@ export default {
   width: 67%;
   vertical-align: top;
   display: inline-block;
+  margin-right:1rem !important;
 }
 
 .right-block {
@@ -498,7 +548,12 @@ export default {
   padding-right: 0.5rem;
 }
 
-
+.stac-button {
+  width: 5rem;
+  height: 3rem;
+  padding: 0.2rem;
+  margin: 0.2rem;
+}
 
 
 </style>

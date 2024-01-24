@@ -167,6 +167,12 @@ class DataRetriever:
                 continue
             score = doc.get('score', 10)
             stac['score'] = score
+            stac_source = doc.get('stac_source', [])
+            if len(stac_source) == 1:
+                stac_source = stac_source[0]
+            else:
+                stac_source = {}
+            stac['stac_source'] = stac_source
             eo_objects = doc.get('eo_objects', [])
             eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
             stac['eo_missions'] = eo_missions
