@@ -113,6 +113,7 @@
             @show-map-clicked="showMapClicked"
             @stacItemClicked="stacItemClicked"
             @fixMapClicked="fixMapClicked" 
+            @clearSTACLayers="clearSTACLayers"
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
@@ -265,10 +266,16 @@ export default {
     fixMapClicked() {
       this.fixMap = !this.fixMap;
     }, 
+    clearSTACLayers() {
+      // unselect all STAC items
+      for (const stacID in this.stacItems) {
+        this.stacItems[stacID].selected = false;
+      }
+    }, 
     // STAC item handler methods
     stacItemClicked(stacCollectionID, requestUID, stacItemID) {
       // STAC item was clicked in map component -> set highlightID to indicate which one was clicked
-      this.stacItems[stacCollectionID][requestUID].highlightID = stacItemID;
+      this.stacItems[stacCollectionID]['requests'][requestUID].highlightID = stacItemID;
     },
     showSTACItemsOnMap(stacCollectionID, requestUID) {
       console.log("show stac items on map");
@@ -504,7 +511,10 @@ export default {
     async continueStackItemQuery(stacCollectionId, locationFilter, timeFilter) {
       // set loading True and selected False for all other entries
       if (!(stacCollectionId in this.stacItems)) {
-        this.stacItems[stacCollectionId] = {}; 
+        this.stacItems[stacCollectionId] = {
+          'selected': false, 
+          'requests' : {}
+        }; 
       }
       let stacRequest = {
         'timeFilter': timeFilter, 
@@ -515,7 +525,7 @@ export default {
         'highlightID': null, // if some STAC item is clicked, highlightID indicates which one
       };
       const stacRequestUID = get_uid();
-      this.stacItems[stacCollectionId][stacRequestUID] = stacRequest;
+      this.stacItems[stacCollectionId]['requests'][stacRequestUID] = stacRequest;
       let stacItemsDict = {};
       try {
         const response = await this.requestSTACItems(stacCollectionId, locationFilter, timeFilter);
@@ -533,14 +543,20 @@ export default {
         stacItemsDict = {};
       }
       finally {
-        // set 'selected' false for all previous entries
-        for (const entryUID in this.stacItems[stacCollectionId]) {
-          this.stacItems[stacCollectionId][entryUID].selected = false;
+        // set 'selected' false for all previous entries (both on STAC collection and request level)
+        // stac collection level
+        for (const stacID in this.stacItems) {
+          this.stacItems[stacID].selected = false;
+        }
+        // request level
+        for (const entryUID in this.stacItems[stacCollectionId]['requests']) {
+          this.stacItems[stacCollectionId]['requests'][entryUID].selected = false;
         }
         // set properties for new entry
-        this.stacItems[stacCollectionId][stacRequestUID].stacItems = stacItemsDict;
-        this.stacItems[stacCollectionId][stacRequestUID].loading = false;
-        this.stacItems[stacCollectionId][stacRequestUID].selected = true;
+        this.stacItems[stacCollectionId].selected = true;
+        this.stacItems[stacCollectionId]['requests'][stacRequestUID].stacItems = stacItemsDict;
+        this.stacItems[stacCollectionId]['requests'][stacRequestUID].loading = false;
+        this.stacItems[stacCollectionId]['requests'][stacRequestUID].selected = true;
       }
     }, 
     async submitStacItemQuery(stacCollectionId) {

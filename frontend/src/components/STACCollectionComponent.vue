@@ -320,7 +320,7 @@ export default {
     stacItems() {
       // stacItems is a dictionary of STAC item requests performed on this STAC collection
       if (this.content._key in this.globalSTACItems) {
-        return this.globalSTACItems[this.content._key];
+        return this.globalSTACItems[this.content._key]['requests'];
       }
       else {
         return null;

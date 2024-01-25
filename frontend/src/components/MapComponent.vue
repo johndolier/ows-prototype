@@ -90,6 +90,7 @@ export default {
     'stacItemClicked', // triggers highlighting of stac item in document list
     'showMapClicked', 
     'fixMapClicked', 
+    'clearSTACLayers', 
   //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
   components: {},
@@ -170,6 +171,7 @@ export default {
 
       // remove STAC layers
       this.clearSTACLayers();
+      this.$emit('clearSTACLayers');
       this.stacCollectionLayers = {};
 
       // remove heatmap layer
@@ -462,7 +464,10 @@ export default {
         this.clearSTACLayers();
         for (const stacCollectionID in this.stacItems) {
           // stacCollectionDict consists of all requests for a single stac collection
-          const stacCollectionDict = this.stacItems[stacCollectionID];
+          const stacCollectionDict = this.stacItems[stacCollectionID].requests;
+          if (this.stacItems[stacCollectionID].selected == false) {
+            continue;
+          }
           for (const requestUID in stacCollectionDict) {
             // entry consists of one single request in that stac collection
             const requestDict = stacCollectionDict[requestUID];
