@@ -84,6 +84,7 @@
             id="documentListComponent"
             :documents="documents" 
             :stacItems="stacItems" 
+            :keywords="keywords"
             initial-document-type="Web Documents"
             :show-top-results-only="false"
             :search-query="lastUserQuery"
@@ -93,6 +94,7 @@
             @showSTACItemsOnMap="showSTACItemsOnMap"
             @showSpatialExtent="showSpatialExtent"
             @keyword-clicked="keywordClicked"
+            @graph-keyword-query="submitGraphKeywordQuery"
           />
         </div>
         <div class="right-column">
@@ -172,7 +174,7 @@ export default {
       }, 
       // stacItems contain all the fetched STAC items frmo this user session
       stacItems: {}, 
-      // keywords: [], 
+      keywords: [], 
 
       // last user query (used to be shown in DocumentList elements)
       lastUserQuery: null,
@@ -203,8 +205,12 @@ export default {
   }, 
 
   async created() {
-    // currently keywords are not used ()
-    // this.keywords = await axios.get('/keywordRequest');
+    const response = await axios.get('/keywordRequest');
+    if (response.status != 200) {
+      console.log("error - could not fetch keywords from database");
+      return;
+    }
+    this.keywords = response.data;
     //console.log("keywords fetched");
   }, 
 
@@ -320,6 +326,21 @@ export default {
       this.homeViewQuery = keyword;
       this.submitQuery(keyword);
     },
+
+    async submitGraphKeywordQuery(keywords) {
+      // graph key
+      const request = {
+        'keywords': keywords, 
+      }
+      const response = await axios.post('/graphKeywordRequest', request);
+      if (response.status  != 200) {
+        console.log("error - could not fetch graph keyword query");
+        return;
+      }
+      // parse response
+      this.documents['stac_collections'] = response.data.stac_collections;
+      this.documents['publications'] = response.data.publications;
+    }, 
   
     // BACKEND QUERY HELPER METHODS
     getLocationFilter() {

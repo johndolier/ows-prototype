@@ -307,3 +307,51 @@ RETURN {conceptCount: conceptCount, keywordCount: keywordCount}
 
 """
 
+
+'''
+GRAPH_KEYWORD_STAC_QUERY:
+    keyword_list: list of keywords to search for
+    
+    returns all STACCollections that have a connection to the given keyword
+'''
+GRAPH_KEYWORD_STAC_QUERY = """
+LET stac_collections = (
+    FOR keyword in @keyword_list
+        FOR node in STACCollection
+            FILTER POSITION( node.keywords, keyword)
+            RETURN DISTINCT {stac:node, score: 1}
+)
+
+FOR node in stac_collections
+    LET conn_eo_objects = (
+        FOR v in OUTBOUND node.stac._id Mentions
+            RETURN {node: v}
+    )
+    LET stac_source = (
+        FOR v in INBOUND node.stac._id STACSourceContains
+        RETURN {name: v.name, link: v.href}
+    )
+    RETURN {stac:node.stac, eo_objects:conn_eo_objects, stac_source:stac_source}
+"""
+
+'''
+GRAPH_KEYWORD_PUB_QUERY:
+    keyword_list: list of keywords to search for
+    
+    returns all  Publications that have a connection to the given keyword
+'''
+GRAPH_KEYWORD_PUB_QUERY = """
+LET pubs = (
+    FOR keyword in @keyword_list
+        FOR node in Publication
+            FILTER POSITION( node.keywords, keyword)
+            RETURN DISTINCT {pub:node, score: 1}
+)
+
+FOR node in pubs
+    LET conn_eo_objects = (
+        FOR v in OUTBOUND node.pub._id Mentions
+            RETURN {node: v}
+    )
+    RETURN {pub:node.pub, eo_objects:conn_eo_objects}
+"""

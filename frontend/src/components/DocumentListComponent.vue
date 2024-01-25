@@ -9,6 +9,25 @@
       :allow-empty="false"
       class="w-full float-left my-2" 
     />
+    <div v-if="showKeywordSearch"
+      class="m-1 w-full"
+    >
+    <PButton v-if="selectedKeywords.length > 0"
+        @click="keywordSearch"
+        severity=""
+        label="Graph Keyword Search"
+        icon="pi pi-share-alt"
+        class="mx-1 my-2"
+      />
+      <AutoComplete 
+        v-model="selectedKeywords"
+        multiple
+        :suggestions="filteredKeywords"
+        @complete="searchKeywords"
+        placeholder="Add keyword..."
+        class="w-10"
+      />
+    </div>
     <div v-if="isTopResultsList"
       class="w-full"
     >
@@ -107,6 +126,7 @@ export default {
     initialDocumentType: String, 
     isTopResultsList: Boolean, // indicates whether this type of DocumentList only shows a specific set of "Top results", rather than having full functionality
     searchQuery: String, // indicates the search query that was used to generate the set of documents (relevant for isTopResultsList=true)
+    keywords: Array, // list of keywords from Arango Graph that can be used for autocomplete
   }, 
 
   emits: [
@@ -117,16 +137,28 @@ export default {
     'showSTACItemsOnMap', 
     'showSpatialExtent', 
     'keywordClicked', 
+    'graphKeywordQuery', 
   ], 
 
   data () {
     return {
       typeSelected: 'STAC Collections', 
       typeOptions: ['Web Documents', 'Publications', 'STAC Collections'], 
+      selectedKeywords: [], 
+      filteredKeywords: null, 
     }
   }, 
 
   computed: {
+    showKeywordSearch() {
+      if (this.isTopResultsList) {
+        return false;
+      }
+      if (this.typeSelected=='Web Documents') {
+        return false;
+      }
+      return true;
+    }, 
     allowSelection() {
       // selection is disabled when only showing top results
       return !this.isTopResultsList;
@@ -145,10 +177,22 @@ export default {
     }, 
     listDocuments() {
       // parse all document types in single document list and sort by score value
-      // filter out types that are not selected
       const documentList = [];
       if (this.typeSelected == 'STAC Collections') {
         for (const element of this.documents.stac_collections) {
+          // filter out items that do not match the keyword filter
+          if (this.selectedKeywords.length > 0) {
+            let match = false;
+            for (const keyword of this.selectedKeywords) {
+              if (element.keywords.includes(keyword)) {
+                match = true;
+                break;
+              }
+            }
+            if (!match) {
+              continue;
+            }
+          }
           documentList.push(['stac_collection', element]);
         }
       }
@@ -159,6 +203,19 @@ export default {
       }
       if (this.typeSelected == 'Publications') { 
         for (const element of this.documents.publications) {
+          // filter out items that do not match the keyword filter
+          if (this.selectedKeywords.length > 0) {
+            let match = false;
+            for (const keyword of this.selectedKeywords) {
+              if (element.keywords.includes(keyword)) {
+                match = true;
+                break;
+              }
+            }
+            if (!match) {
+              continue;
+            }
+          }
           documentList.push(['publication', element]);
         }
       }
@@ -200,8 +257,28 @@ export default {
       this.$emit('showSpatialExtent', spatialExtent);
     }, 
     keywordClicked(keyword) {
-      this.$emit('keywordClicked', keyword);
+      // this.$emit('keywordClicked', keyword);
+      // check if keyword is already selected
+      if (this.selectedKeywords.includes(keyword)) {
+        return;
+      }
+      this.selectedKeywords.push(keyword);
     },
+    searchKeywords(event) {
+      setTimeout(() => {
+        if (!event.query.trim().length) {
+          this.filteredKeywords = [...this.keywords];
+        } else {
+          this.filteredKeywords = this.keywords.filter((keyword) => {
+            return keyword.toLowerCase().startsWith(event.query.toLowerCase());
+          });
+        }
+      }, 250);
+    }, 
+    keywordSearch() {
+      // search graph based on selected keywords
+      this.$emit('graphKeywordQuery', this.selectedKeywords);
+    }
   }, 
 
   watch: {

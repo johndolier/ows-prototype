@@ -45,6 +45,10 @@ html,body {
     overflow: auto;
 }
 
+.p-autocomplete-multiple-container {
+    width: 100%;
+}
+
 /* .p-multiselect {
     font-size: 0.5rem !important;
 }

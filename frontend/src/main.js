@@ -42,6 +42,8 @@ import Message from 'primevue/message';
 import Toast from 'primevue/toast';
 import Sidebar from 'primevue/sidebar';
 import ConfirmDialog from 'primevue/confirmdialog';
+import AutoComplete from 'primevue/autocomplete';
+
 
 app.component('SelectButton', SelectButton);
 app.component('InputText', InputText);
@@ -57,7 +59,7 @@ app.component('PMessage', Message);
 app.component('PToast', Toast);
 app.component('PSidebar', Sidebar);
 app.component('ConfirmDialog', ConfirmDialog);
-
+app.component('AutoComplete', AutoComplete);
 
 // add ToastService (Primevue) for notifications
 // https://primevue.org/toast/
