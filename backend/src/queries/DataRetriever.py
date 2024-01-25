@@ -227,7 +227,9 @@ class DataRetriever:
         return filtered_tweets[:limit]
         
     def make_graph_keyword_query(self, keywords:list[str]):
-        
+        ''' Makes graph query for publications and stac collections that are connected to the given keywords
+            additionally makes normal web query with keyword list to get web documents (currently disabled)
+        '''
         query_params = {'keyword_list': keywords}
         try:
             results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=query_params, rawResults=True)
@@ -244,7 +246,9 @@ class DataRetriever:
             print(e)
             publications = []
         
-        return {'stac_collections': stac_collections, 'publications': publications}        
+        # web_results = self.make_web_query(query=' '.join(keywords), limit=100)
+        # return {'stac_collections': stac_collections, 'publications': publications, 'web_documents': web_results}
+        return {'stac_collections': stac_collections, 'publications': publications}      
         
         
   # WEB QUERY HELPER FUNCTIONS

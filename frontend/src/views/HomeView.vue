@@ -10,7 +10,7 @@
     />
     <ConfirmDialog />
     <!-- Siebar component for advanced query and filtering documents -->
-    <PSidebar 
+    <!-- <PSidebar 
       v-model:visible="showAdvancedSearch" 
       position="left" 
       :modal="false"
@@ -47,7 +47,7 @@
         label="SHOW GEOTWEETS (DEBUG)"
         @click="requestGeotweets" 
       />
-    </PSidebar>
+    </PSidebar> -->
 
     <div v-if="showStartScreen">
       <div 
@@ -62,6 +62,7 @@
         class="center"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch" 
+        :show-advanced-search-button="false"
         placeholder="Start your search here..." 
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
@@ -70,21 +71,25 @@
     <div v-else>
       <!-- "NORMAL" SCREEN -->
       <SearchHeaderComponent 
+        ref="searchHeaderRef"
         id="searchHeader" 
         class="center-x surface-ground z-1"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch"
+        :show-advanced-search-button="true"
         :homeViewQuery="homeViewQuery"
+        :keywords="keywords"
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
+        @graph-keyword-query="submitGraphKeywordQuery"
       />
-      <div id="documentBody" class=" surface-ground flex">
+      <div :id="showAdvancedSearch ? 'documentBodyExtended' : 'documentBody'" 
+        class=" surface-ground flex">
         <div class="left-column">
           <DocumentListComponent
             id="documentListComponent"
             :documents="documents" 
             :stacItems="stacItems" 
-            :keywords="keywords"
             initial-document-type="Web Documents"
             :show-top-results-only="false"
             :search-query="lastUserQuery"
@@ -94,7 +99,6 @@
             @showSTACItemsOnMap="showSTACItemsOnMap"
             @showSpatialExtent="showSpatialExtent"
             @keyword-clicked="keywordClicked"
-            @graph-keyword-query="submitGraphKeywordQuery"
           />
         </div>
         <div class="right-column">
@@ -167,7 +171,7 @@ export default {
     return {
       // main variable to hold response from server
       // gets refreshed for each new user query 
-      documents: {
+      rawDocuments: {
         'publications': [],  
         'stac_collections': [], 
         'web_documents': [],
@@ -221,6 +225,11 @@ export default {
       }
       return true;
     }, 
+    documents() {
+      // placeholder function
+      const documents = this.rawDocuments;
+      return documents;
+    }
   }, 
 
   methods: {
@@ -323,8 +332,13 @@ export default {
     // DOCUMENT LIST COMPONENT METHODS
     keywordClicked(keyword) {
       // user clicked on a keyword in a document -> submit query with keyword
-      this.homeViewQuery = keyword;
-      this.submitQuery(keyword);
+      // this.homeViewQuery = keyword;
+      // this.submitQuery(keyword);
+      // user clicked on a keyword in a document -> add to selected Keywords from search component (and activate advanced search)
+      if (this.$refs.searchHeaderRef && !this.$refs.searchHeaderRef.selectedKeywords.includes(keyword)) {
+        this.$refs.searchHeaderRef.selectedKeywords.push(keyword);
+      }
+      this.showAdvancedSearch = true;
     },
 
     async submitGraphKeywordQuery(keywords) {
@@ -338,8 +352,11 @@ export default {
         return;
       }
       // parse response
-      this.documents['stac_collections'] = response.data.stac_collections;
-      this.documents['publications'] = response.data.publications;
+      this.rawDocuments['stac_collections'] = response.data.stac_collections;
+      this.rawDocuments['publications'] = response.data.publications;
+      // console.log(this.rawDocuments.stac_collections.length);
+      // console.log(this.rawDocuments.publications.length);
+      // this.rawDocuments['web_documents'] = response.data.web_documents;
     }, 
   
     // BACKEND QUERY HELPER METHODS
@@ -429,8 +446,8 @@ export default {
           }
           const key = singleResponse.data[0];
           console.log("database request for " + key + " was successful!");
-          if (key in this.documents) {
-            this.documents[key] = singleResponse.data[1];
+          if (key in this.rawDocuments) {
+            this.rawDocuments[key] = singleResponse.data[1];
           }
         }
       } catch(err) {
@@ -648,6 +665,10 @@ export default {
 
 #documentBody {
     margin-top: 120px;
+}
+
+#documentBodyExtended {
+    margin-top: 170px;
 }
 
 #appHeader {
