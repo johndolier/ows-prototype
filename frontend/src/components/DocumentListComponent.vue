@@ -45,6 +45,7 @@
                   :content="slotProps.data[1]" 
                   :normal-style="!isTopResultsList"
                   @keyword-clicked="keywordClicked"
+                  @author-clicked="authorClicked"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'web_document'">
@@ -117,6 +118,7 @@ export default {
     'showSTACItemsOnMap', 
     'showSpatialExtent', 
     'keywordClicked', 
+    'authorClicked', 
   ], 
 
   data () {
@@ -200,6 +202,9 @@ export default {
     }, 
     keywordClicked(keyword) {
       this.$emit('keywordClicked', keyword);
+    }, 
+    authorClicked(author) {
+      this.$emit('authorClicked', author);
     }, 
   }, 
   watch: {

@@ -154,7 +154,7 @@
         :keywords="keywords"
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
-        @graph-keyword-query="submitGraphKeywordQuery"
+        @graph-query="submitGraphQuery"
       />
       <div :id="showAdvancedSearch ? 'documentBodyExtended' : 'documentBody'" 
         class=" surface-ground flex">
@@ -172,6 +172,7 @@
             @showSTACItemsOnMap="showSTACItemsOnMap"
             @showSpatialExtent="showSpatialExtent"
             @keyword-clicked="keywordClicked"
+            @author-clicked="authorClicked"  
           />
         </div>
         <div class="right-column">
@@ -428,15 +429,21 @@ export default {
       }
       this.showAdvancedSearch = true;
     },
+    authorClicked(author) {
+      if (this.$refs.searchHeaderRef && !this.$refs.searchHeaderRef.selectedKeywords.includes(author)) {
+        this.$refs.searchHeaderRef.selectedKeywords.push(author);
+      }
+      this.showAdvancedSearch = true;
+    }, 
 
-    async submitGraphKeywordQuery(keywords) {
+    async submitGraphQuery(keywords) {
       // graph key
       const request = {
         'keywords': keywords, 
       }
-      const response = await axios.post('/graphKeywordRequest', request);
+      const response = await axios.post('/graphQueryRequest', request);
       if (response.status  != 200) {
-        console.log("error - could not fetch graph keyword query");
+        console.log("error - could not fetch graph query");
         return;
       }
       // parse response

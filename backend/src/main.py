@@ -116,9 +116,9 @@ def get_all_keywords_request():
     keywords = data_retriever.get_all_keywords()
     return keywords
 
-@app.post("/graphKeywordRequest")
-def graph_keyword_request(request: GraphKeywordRequest):
-    results = data_retriever.make_graph_keyword_query(keywords=request.keywords)
+@app.post("/graphQueryRequest")
+def graph_query_request(request: GraphQueryRequest):
+    results = data_retriever.make_graph_query(keywords_list=request.keywords)
     return results
 
 @app.post("/queryAnalyzerRequest")

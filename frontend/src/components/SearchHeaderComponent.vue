@@ -24,6 +24,7 @@
     <div v-if="showAdvancedSearch" class="my-1">
       <AutoComplete 
         v-model="selectedKeywords"
+        option-label="name"
         multiple
         :suggestions="filteredKeywords"
         @complete="searchKeywords"
@@ -31,9 +32,9 @@
         class="w-9"
       />
       <PButton
-        @click="keywordSearch"
+        @click="graphSearch"
         severity="warning"
-        label="Graph Keyword Search"
+        label="Graph Search"
         icon="pi pi-share-alt"
         icon-pos="left"
         class="mx-2 w-1"
@@ -74,7 +75,7 @@ export default {
   emits: [
     'submitQuery', 
     'advancedSearchClick',
-    'graphKeywordQuery', 
+    'graphQuery', 
   ], 
   data() {
     return {
@@ -90,14 +91,14 @@ export default {
           this.filteredKeywords = [...this.keywords];
         } else {
           this.filteredKeywords = this.keywords.filter((keyword) => {
-            return keyword.toLowerCase().startsWith(event.query.toLowerCase());
+            return keyword.name.toLowerCase().startsWith(event.query.toLowerCase());
           });
         }
       }, 250);
     }, 
-    keywordSearch() {
+    graphSearch() {
       // search graph based on selected keywords
-      this.$emit('graphKeywordQuery', this.selectedKeywords);
+      this.$emit('graphQuery', this.selectedKeywords);
     }, 
   }, 
   watch: {
@@ -106,7 +107,9 @@ export default {
     }, 
     selectedKeywords: {
       handler() {
-        this.userQuery = this.selectedKeywords.join(' ');
+        this.userQuery = this.selectedKeywords.map(function(keyword) {
+          return keyword.name;
+        }).join(' ');
       }, 
       deep: true, 
     }, 

@@ -166,11 +166,16 @@ class DataRetriever:
     def get_all_keywords(self, batchSize:int = 1000):
         try:
             result = self.db.AQLQuery(ALL_KEWORDS_QUERY, batchSize=batchSize, rawResults=True)
-            result = [key['_key'] for key in result] # transform query object to list of keywords
+            keyword_list = []
+            for node in result:
+                keyword_list.append({
+                    'id': node['_id'], 
+                    'name': node['keyword_full']
+                })
         except Exception as e:
             print(e)
-            result = []
-        return result
+            keyword_list = []
+        return keyword_list
     
     def make_publications_query(self, query:str, keywords:list[str] = None, limit:int = 500) -> list[dict]:
         '''
@@ -226,21 +231,37 @@ class DataRetriever:
         
         return filtered_tweets[:limit]
         
-    def make_graph_keyword_query(self, keywords:list[str]):
-        ''' Makes graph query for publications and stac collections that are connected to the given keywords
+    def make_graph_query(self, keywords_list:list[str]):
+        ''' Makes graph query for publications and stac collections that are connected to the given keywords and authors (in case with publications)
             additionally makes normal web query with keyword list to get web documents (currently disabled)
         '''
-        query_params = {'keyword_list': keywords}
+        
+        authors = []
+        keywords = []
+        for element in keywords_list:
+            if element['id'].startswith('Author'):
+                authors.append(element['id'])
+            elif element['id'].startswith('Keyword'):
+                keywords.append(element['id'])
+            else:
+                # error
+                continue
+        
+        stac_query_params = {'keyword_list': keywords}
         try:
-            results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=query_params, rawResults=True)
+            results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=stac_query_params, rawResults=True)
             results = [e for e in results]
             stac_collections = self.__transform_raw_stac_collection_results(results)
         except Exception as e:
             print(e)
             stac_collections = []
         
+        pub_query_params = {
+            'author_list': authors, 
+            'keyword_list': keywords
+        }
         try:
-            results = self.db.AQLQuery(GRAPH_KEYWORD_PUB_QUERY, bindVars=query_params, rawResults=True)
+            results = self.db.AQLQuery(GRAPH_KEYWORD_PUB_QUERY, bindVars=pub_query_params, rawResults=True)
             publications = self.__transform_raw_publication_results(results)
         except Exception as e:
             print(e)
@@ -435,8 +456,8 @@ time_range = [time_start, time_end]
             stac = doc.get('stac')
             if not stac:
                 continue
-            score = doc.get('score', 10)
-            stac['score'] = score
+            stac['score'] = doc.get('score', 10)
+            stac['keywords'] = doc.get('keywords', [])
             stac_source = doc.get('stac_source', [])
             if len(stac_source) == 1:
                 stac_source = stac_source[0]
@@ -459,12 +480,14 @@ time_range = [time_start, time_end]
             pub = doc.get('pub')
             if not pub:
                 continue
-            score = doc.get('score', 0)
-            pub['score'] = score
+            pub['score'] = doc.get('score', 0)
+            pub['authors'] = doc.get('authors', [])
+            pub['keywords'] = doc.get('keywords', [])
             eo_objects = doc.get('eo_objects', [])
             eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
             pub['eo_missions'] = eo_missions
             pub['eo_instruments'] = eo_instruments
+
             transformed_results.append(pub)
         return transformed_results
     
