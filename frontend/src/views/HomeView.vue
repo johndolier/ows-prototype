@@ -563,10 +563,9 @@ export default {
         const response = await this.requestSTACItems(stacCollectionID, this.locationFilter, this.timeFilter);
         // transform list of STAC items (dictionaries) into dictionary of STAC items (key: uid)
         for (const stacDict of response.data[1]) {
-          const id = stacDict.id;
-          stacItemsDict[id] = stacDict;
+          stacItemsDict[stacDict.id] = stacDict;
           // add stacRequestUID to identify stacItem later
-          stacItemsDict[id].requestUID = stacRequestUID;
+          stacItemsDict[stacDict.id].requestUID = stacRequestUID;
         }
       }
       catch (err) {
@@ -575,20 +574,34 @@ export default {
         stacItemsDict = {};
       }
       finally {
-        // set 'selected' false for all previous entries (both on STAC collection and request level)
-        // stac collection level
-        for (const stacID in this.stacItems) {
-          this.stacItems[stacID].selected = false;
+        if (Object.keys(stacItemsDict).length == 0) {
+          // no STAC items were returned -> alert user and delete request
+          this.$toast.add({
+            severity: 'error', 
+            summary: 'STAC item query failed', 
+            detail: 'Unfortunately, there were no results for your STAC query!', 
+            life: 4000, 
+            group: 'tc'
+          });
+          delete this.stacItems[stacCollectionID]['requests'][stacRequestUID];
         }
-        // request level
-        for (const entryUID in this.stacItems[stacCollectionID]['requests']) {
-          this.stacItems[stacCollectionID]['requests'][entryUID].selected = false;
+        else {
+          // set 'selected' false for all previous entries (both on STAC collection and request level)
+          // stac collection level
+          for (const stacID in this.stacItems) {
+            this.stacItems[stacID].selected = false;
+          }
+          // request level
+          for (const entryUID in this.stacItems[stacCollectionID]['requests']) {
+            this.stacItems[stacCollectionID]['requests'][entryUID].selected = false;
+          }
+          // set properties for new entry
+          this.stacItems[stacCollectionID].selected = true;
+          this.stacItems[stacCollectionID]['requests'][stacRequestUID].stacItems = stacItemsDict;
+          this.stacItems[stacCollectionID]['requests'][stacRequestUID].loading = false;
+          this.stacItems[stacCollectionID]['requests'][stacRequestUID].selected = true;
         }
-        // set properties for new entry
-        this.stacItems[stacCollectionID].selected = true;
-        this.stacItems[stacCollectionID]['requests'][stacRequestUID].stacItems = stacItemsDict;
-        this.stacItems[stacCollectionID]['requests'][stacRequestUID].loading = false;
-        this.stacItems[stacCollectionID]['requests'][stacRequestUID].selected = true;
+
       }
     }, 
     async submitStacItemQuery(stacCollectionID) {
@@ -654,7 +667,6 @@ export default {
         'location_filter': locationFilter, 
         'time_interval': timeInterval
       };
-      console.log(request);
       return axios.post(path, request);
     }, 
     async requestSTACNotebook(stacCollectionID, locationFilter, timeInterval) {
