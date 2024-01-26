@@ -43,15 +43,13 @@ import Toast from 'primevue/toast';
 import Sidebar from 'primevue/sidebar';
 import ConfirmDialog from 'primevue/confirmdialog';
 import AutoComplete from 'primevue/autocomplete';
-
+import Tag from 'primevue/tag';
+import InputNumber from 'primevue/inputnumber';
 
 app.component('SelectButton', SelectButton);
 app.component('InputText', InputText);
-// app.component('MultiSelect', MultiSelect);
 app.component('PButton', Button);
 app.component('SplitButton', SplitButton);
-//app.component('SplitterParent', Splitter);
-//app.component('SplitterPanel', SplitterPanel);
 app.component('OverlayPanel', OverlayPanel);
 app.component('DataView', DataView);
 app.component('PDialog', Dialog);
@@ -60,6 +58,8 @@ app.component('PToast', Toast);
 app.component('PSidebar', Sidebar);
 app.component('ConfirmDialog', ConfirmDialog);
 app.component('AutoComplete', AutoComplete);
+app.component('PTag', Tag);
+app.component('InputNumber', InputNumber);
 
 // add ToastService (Primevue) for notifications
 // https://primevue.org/toast/
