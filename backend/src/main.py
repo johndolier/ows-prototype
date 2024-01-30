@@ -116,6 +116,11 @@ def get_all_keywords_request():
     keywords = data_retriever.get_all_keywords()
     return keywords
 
+@app.post("/graphKeywordRequest")
+def graph_keyword_request(request: GraphKeywordRequest):
+    results = data_retriever.make_graph_keyword_query(keywords=request.keywords)
+    return results
+
 @app.post("/queryAnalyzerRequest")
 def analyze_user_query(request: QueryAnalyzerRequest) -> dict:
     ''' Takes the user query and extracts possible locations, time mentions and general keywords '''

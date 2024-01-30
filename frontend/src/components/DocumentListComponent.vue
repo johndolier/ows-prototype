@@ -141,11 +141,10 @@ export default {
       if (this.searchQuery == null) {
         return "No documents found. Please specify a query above";
       }
-      return "No documents found for '" + this.searchQuery + "'";
+      return "No documents found :(";
     }, 
     listDocuments() {
       // parse all document types in single document list and sort by score value
-      // filter out types that are not selected
       const documentList = [];
       if (this.typeSelected == 'STAC Collections') {
         for (const element of this.documents.stac_collections) {
@@ -201,9 +200,8 @@ export default {
     }, 
     keywordClicked(keyword) {
       this.$emit('keywordClicked', keyword);
-    },
+    }, 
   }, 
-
   watch: {
     typeSelected() {
       if (!this.typeOptions.includes(this.typeSelected)) {

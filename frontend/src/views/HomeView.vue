@@ -9,8 +9,81 @@
       group="tl" 
     />
     <ConfirmDialog />
+    <PDialog
+      v-model:visible="showSTACRequestAlert" 
+      modal 
+      :header="'Request STAC Items for Collection ' + stacCollectionID"
+      class=""
+      contentClass=""
+    >
+      <div v-if="locationFilter == null">
+        <p>
+          No location filter selected - please select a location filter in the Map Component to continue
+        </p>
+      </div>
+      <div v-else>
+        <PTag 
+          v-tooltip="'Location Filter: ' + JSON.stringify(locationFilter)"
+          class="my-2 mx-1"
+          severity="success"
+          icon="pi pi-check"
+          icon-pos="right"
+          value="Selected location filter"
+        />
+        <PTag v-if="timeSelected" 
+          class="my-2 mx-1"
+          severity="success"
+          icon="pi pi-check"
+          icon-pos="right"
+          value="Selected time filter"
+        />
+        <div class="advanced-search-element">
+          <label for="datepicker" class="font-bold block mb-2">Select Time Range (optional)</label>
+          <VueDatePicker 
+            id="datepicker"
+            v-model="timeRangeFilter" 
+            range 
+            :partial-range="false" 
+            class="advanced-search-body"
+          />
+          <PButton 
+            v-if="timeSelected"
+            class="my-2 center-button"
+            severity="danger"
+            icon="pi pi-ban"
+            label="Clear Time Selection"
+            @click="clearTimeSelection" 
+          />
+        </div>
+        <div class="advanced-search-element">
+          <label for="integeronly" class="font-bold block mb-2">Specify STAC item limit</label>
+          <InputNumber 
+            v-model="stacLimit" 
+            inputId="integeronly" 
+            :min="5"
+            :max="500"
+          />
+        </div>
+      </div>
+      <div>
+        <PButton 
+          class="dialog-button"
+          severity="danger"
+          icon="pi pi-times"
+          label="Cancel"
+          @click="showSTACRequestAlert = false"
+        />
+        <PButton v-if="locationFilter != null"
+          class="dialog-button"
+          severity="success"
+          icon="pi pi-check"
+          label="Submit STAC Request"
+          @click="continueStacItemQuery(this.stacCollectionID)"
+        />
+      </div>
+    </PDialog>
     <!-- Siebar component for advanced query and filtering documents -->
-    <PSidebar 
+    <!-- <PSidebar 
       v-model:visible="showAdvancedSearch" 
       position="left" 
       :modal="false"
@@ -47,7 +120,7 @@
         label="SHOW GEOTWEETS (DEBUG)"
         @click="requestGeotweets" 
       />
-    </PSidebar>
+    </PSidebar> -->
 
     <div v-if="showStartScreen">
       <div 
@@ -62,6 +135,7 @@
         class="center"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch" 
+        :show-advanced-search-button="false"
         placeholder="Start your search here..." 
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
@@ -70,15 +144,20 @@
     <div v-else>
       <!-- "NORMAL" SCREEN -->
       <SearchHeaderComponent 
+        ref="searchHeaderRef"
         id="searchHeader" 
         class="center-x surface-ground z-1"
         :queryIsLoading="queryIsLoading" 
         :showAdvancedSearch="showAdvancedSearch"
+        :show-advanced-search-button="true"
         :homeViewQuery="homeViewQuery"
+        :keywords="keywords"
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
+        @graph-keyword-query="submitGraphKeywordQuery"
       />
-      <div id="documentBody" class=" surface-ground flex">
+      <div :id="showAdvancedSearch ? 'documentBodyExtended' : 'documentBody'" 
+        class=" surface-ground flex">
         <div class="left-column">
           <DocumentListComponent
             id="documentListComponent"
@@ -107,6 +186,7 @@
             @show-map-clicked="showMapClicked"
             @stacItemClicked="stacItemClicked"
             @fixMapClicked="fixMapClicked" 
+            @clearSTACLayers="clearSTACLayers"
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
@@ -116,8 +196,6 @@
               initial-document-type="STAC Collections"
               :is-top-results-list="true"
               :search-query="lastUserQuery"
-              @submitStacItemQuery="submitStacItemQuery" 
-              @downloadSTACNotebook="downloadSTACNotebook"
               @close-document-list="closeDocumentList"
            />
           </div>
@@ -129,8 +207,6 @@
               initial-document-type="Publications"
               :is-top-results-list="true"
               :search-query="lastUserQuery"
-              @submitStacItemQuery="submitStacItemQuery" 
-              @downloadSTACNotebook="downloadSTACNotebook"
               @close-document-list="closeDocumentList"
             />
           </div>
@@ -165,14 +241,14 @@ export default {
     return {
       // main variable to hold response from server
       // gets refreshed for each new user query 
-      documents: {
+      rawDocuments: {
         'publications': [],  
         'stac_collections': [], 
         'web_documents': [],
       }, 
       // stacItems contain all the fetched STAC items frmo this user session
       stacItems: {}, 
-      // keywords: [], 
+      keywords: [], 
 
       // last user query (used to be shown in DocumentList elements)
       lastUserQuery: null,
@@ -191,6 +267,11 @@ export default {
       fixMap: false, 
       showTopSTACResults: true, 
       showTopPublicationResults: true, 
+      // alert for STAC request
+      showSTACRequestAlert: false,
+      stacCollectionID: null,
+      locationFilter: null, 
+      stacLimit: 50, 
 
       // FILTERS
       timeRangeFilter: [], 
@@ -203,8 +284,12 @@ export default {
   }, 
 
   async created() {
-    // currently keywords are not used ()
-    // this.keywords = await axios.get('/keywordRequest');
+    const response = await axios.get('/keywordRequest');
+    if (response.status != 200) {
+      console.log("error - could not fetch keywords from database");
+      return;
+    }
+    this.keywords = response.data;
     //console.log("keywords fetched");
   }, 
 
@@ -215,6 +300,18 @@ export default {
       }
       return true;
     }, 
+    documents() {
+      // placeholder function
+      const documents = this.rawDocuments;
+      return documents;
+    }, 
+    timeFilter() {
+      // return time filter as list of two timestamps
+      if (this.timeRangeFilter.length == 0) {
+        return [];
+      }
+      return [this.timeRangeFilter[0], this.timeRangeFilter[1]];
+    }
   }, 
 
   methods: {
@@ -250,10 +347,16 @@ export default {
     fixMapClicked() {
       this.fixMap = !this.fixMap;
     }, 
+    clearSTACLayers() {
+      // unselect all STAC items
+      for (const stacID in this.stacItems) {
+        this.stacItems[stacID].selected = false;
+      }
+    }, 
     // STAC item handler methods
     stacItemClicked(stacCollectionID, requestUID, stacItemID) {
       // STAC item was clicked in map component -> set highlightID to indicate which one was clicked
-      this.stacItems[stacCollectionID][requestUID].highlightID = stacItemID;
+      this.stacItems[stacCollectionID]['requests'][requestUID].highlightID = stacItemID;
     },
     showSTACItemsOnMap(stacCollectionID, requestUID) {
       console.log("show stac items on map");
@@ -317,9 +420,32 @@ export default {
     // DOCUMENT LIST COMPONENT METHODS
     keywordClicked(keyword) {
       // user clicked on a keyword in a document -> submit query with keyword
-      this.homeViewQuery = keyword;
-      this.submitQuery(keyword);
+      // this.homeViewQuery = keyword;
+      // this.submitQuery(keyword);
+      // user clicked on a keyword in a document -> add to selected Keywords from search component (and activate advanced search)
+      if (this.$refs.searchHeaderRef && !this.$refs.searchHeaderRef.selectedKeywords.includes(keyword)) {
+        this.$refs.searchHeaderRef.selectedKeywords.push(keyword);
+      }
+      this.showAdvancedSearch = true;
     },
+
+    async submitGraphKeywordQuery(keywords) {
+      // graph key
+      const request = {
+        'keywords': keywords, 
+      }
+      const response = await axios.post('/graphKeywordRequest', request);
+      if (response.status  != 200) {
+        console.log("error - could not fetch graph keyword query");
+        return;
+      }
+      // parse response
+      this.rawDocuments['stac_collections'] = response.data.stac_collections;
+      this.rawDocuments['publications'] = response.data.publications;
+      // console.log(this.rawDocuments.stac_collections.length);
+      // console.log(this.rawDocuments.publications.length);
+      // this.rawDocuments['web_documents'] = response.data.web_documents;
+    }, 
   
     // BACKEND QUERY HELPER METHODS
     getLocationFilter() {
@@ -330,15 +456,6 @@ export default {
       }
       return this.$refs.mapRef.getLocationFilter();
     }, 
-    getTimeFilterList() {
-      // return a list of current time filters
-      if (this.timeRangeFilter.length == null) {
-        return [];
-      }
-      // copy array
-      return [this.timeRangeFilter[0], this.timeRangeFilter[1]];
-    }, 
-
     // BACKEND QUERY METHODS
     async submitQuery(userQuery) {
       //console.log("starting to submit query");
@@ -408,8 +525,8 @@ export default {
           }
           const key = singleResponse.data[0];
           console.log("database request for " + key + " was successful!");
-          if (key in this.documents) {
-            this.documents[key] = singleResponse.data[1];
+          if (key in this.rawDocuments) {
+            this.rawDocuments[key] = singleResponse.data[1];
           }
         }
       } catch(err) {
@@ -422,71 +539,33 @@ export default {
         // this.showMapAndList();        
       }
     }, 
-    validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter) {
-      if (locationFilter == null) {
-        // abort query if no area is selected
-        console.log("no filter area selected -> no STAC query possible");
-        this.$toast.add({
-          severity: 'warn', 
-          summary: 'Select location', 
-          detail: 'Please specify location for STAC request!', 
-          life: 4000, 
-          group: 'tc'
-        });
-        return false;
-      }
-      if (timeFilter.length == 0) {
-        // timeRange is not complete: ask user whether to continue
-        const parent = this; // used to access 'this' in callback function
-        this.$confirm.require({
-          message: "No time range selected - Do you want to proceed?", 
-          header: "Confirmation", 
-          icon: "pi pi-exclamation-triangle", 
-          accept: function() {
-            // clear time range 
-            parent.timeRangeFilter = [];
-            parent.continueStackItemQuery(stacCollectionId, locationFilter, timeFilter);
-          }, 
-          reject: function() {
-            parent.$toast.add({
-              severity: 'warn', 
-              summary: 'Select time range', 
-              detail: 'Please specify time range for STAC item query', 
-              life: 4000, 
-              group: 'tc'
-            });
-            parent.showAdvancedSearch = true;
-          }, 
-        });
-        return false;
-      }
-      // continue with stac item query
-      return true;
-    }, 
-    async continueStackItemQuery(stacCollectionId, locationFilter, timeFilter) {
+    async continueStacItemQuery(stacCollectionID) {
+      this.showSTACRequestAlert = false;
       // set loading True and selected False for all other entries
-      if (!(stacCollectionId in this.stacItems)) {
-        this.stacItems[stacCollectionId] = {}; 
+      if (!(stacCollectionID in this.stacItems)) {
+        this.stacItems[stacCollectionID] = {
+          'selected': false, 
+          'requests' : {}
+        }; 
       }
       let stacRequest = {
-        'timeFilter': timeFilter, 
-        'locationFilter': locationFilter, 
+        'timeFilter': this.timeFilter, 
+        'locationFilter': this.locationFilter, 
         'stacItems': [], 
         'selected': false, 
         'loading': true, 
         'highlightID': null, // if some STAC item is clicked, highlightID indicates which one
       };
       const stacRequestUID = get_uid();
-      this.stacItems[stacCollectionId][stacRequestUID] = stacRequest;
+      this.stacItems[stacCollectionID]['requests'][stacRequestUID] = stacRequest;
       let stacItemsDict = {};
       try {
-        const response = await this.requestSTACItems(stacCollectionId, locationFilter, timeFilter);
+        const response = await this.requestSTACItems(stacCollectionID, this.locationFilter, this.timeFilter);
         // transform list of STAC items (dictionaries) into dictionary of STAC items (key: uid)
         for (const stacDict of response.data[1]) {
-          const id = stacDict.id;
-          stacItemsDict[id] = stacDict;
+          stacItemsDict[stacDict.id] = stacDict;
           // add stacRequestUID to identify stacItem later
-          stacItemsDict[id].requestUID = stacRequestUID;
+          stacItemsDict[stacDict.id].requestUID = stacRequestUID;
         }
       }
       catch (err) {
@@ -495,36 +574,48 @@ export default {
         stacItemsDict = {};
       }
       finally {
-        // set 'selected' false for all previous entries
-        for (const entryUID in this.stacItems[stacCollectionId]) {
-          this.stacItems[stacCollectionId][entryUID].selected = false;
+        if (Object.keys(stacItemsDict).length == 0) {
+          // no STAC items were returned -> alert user and delete request
+          this.$toast.add({
+            severity: 'error', 
+            summary: 'STAC item query failed', 
+            detail: 'Unfortunately, there were no results for your STAC query!', 
+            life: 4000, 
+            group: 'tc'
+          });
+          delete this.stacItems[stacCollectionID]['requests'][stacRequestUID];
         }
-        // set properties for new entry
-        this.stacItems[stacCollectionId][stacRequestUID].stacItems = stacItemsDict;
-        this.stacItems[stacCollectionId][stacRequestUID].loading = false;
-        this.stacItems[stacCollectionId][stacRequestUID].selected = true;
-      }
-    }, 
-    async submitStacItemQuery(stacCollectionId) {
-      // get location and time filters
-      const locationFilter = this.getLocationFilter();
-      const timeFilter = this.getTimeFilterList();
+        else {
+          // set 'selected' false for all previous entries (both on STAC collection and request level)
+          // stac collection level
+          for (const stacID in this.stacItems) {
+            this.stacItems[stacID].selected = false;
+          }
+          // request level
+          for (const entryUID in this.stacItems[stacCollectionID]['requests']) {
+            this.stacItems[stacCollectionID]['requests'][entryUID].selected = false;
+          }
+          // set properties for new entry
+          this.stacItems[stacCollectionID].selected = true;
+          this.stacItems[stacCollectionID]['requests'][stacRequestUID].stacItems = stacItemsDict;
+          this.stacItems[stacCollectionID]['requests'][stacRequestUID].loading = false;
+          this.stacItems[stacCollectionID]['requests'][stacRequestUID].selected = true;
+        }
 
-      const queryIsValid = this.validateParamsForStacItemQuery(stacCollectionId, locationFilter, timeFilter)
-      if (!queryIsValid) {
-        // invalid query parameters
-        console.log("invalid parameters for STAC query");
-        return;
       }
-      // continue with Stac item query 
-      this.continueStackItemQuery(stacCollectionId, locationFilter, timeFilter);
     }, 
-    async downloadSTACNotebook(stacCollectionId) {
+    async submitStacItemQuery(stacCollectionID) {
+      // open alert
+      this.stacCollectionID = stacCollectionID;
+      this.locationFilter = this.getLocationFilter();
+      this.showSTACRequestAlert = true;
+    }, 
+    async downloadSTACNotebook(stacCollectionID) {
       let locationFilter = this.getLocationFilter();
-      let timeFilter = this.getTimeFilterList();
+      // let timeFilter = this.getTimeFilterList();
       let response = [];
       try {
-        response = await this.requestSTACNotebook(stacCollectionId, locationFilter, timeFilter);
+        response = await this.requestSTACNotebook(stacCollectionID, locationFilter, this.timeFilter);
         // create blob file and trigger automatic download
         const blob = new Blob([response.data]);
         const link = document.createElement('a');
@@ -568,20 +659,20 @@ export default {
       };
       return axios.post(path, request);
     }, 
-    async requestSTACItems(stacCollectionId, locationFilter, timeInterval) {
+    async requestSTACItems(stacCollectionID, locationFilter, timeInterval) {
       const path = '/stacItemRequest';
       const request = {
-        'collection_id': stacCollectionId, 
-        'limit': 500, 
+        'collection_id': stacCollectionID, 
+        'limit': this.stacLimit, 
         'location_filter': locationFilter, 
         'time_interval': timeInterval
       };
       return axios.post(path, request);
     }, 
-    async requestSTACNotebook(stacCollectionId, locationFilter, timeInterval) {
+    async requestSTACNotebook(stacCollectionID, locationFilter, timeInterval) {
       const path = '/notebookExportRequest';
       const request = {
-        'collection_id': stacCollectionId, 
+        'collection_id': stacCollectionID, 
         'location_filter': locationFilter, 
         'time_interval': timeInterval
       }; 
@@ -629,6 +720,10 @@ export default {
     margin-top: 120px;
 }
 
+#documentBodyExtended {
+    margin-top: 170px;
+}
+
 #appHeader {
     position: fixed;
     width: 100%; 
@@ -652,6 +747,12 @@ export default {
     margin-left: auto;
     margin-right:0.5rem;
     padding: 1.0rem;
+}
+
+.stacDialog {
+  width: 50% !important;
+  height: 50% !important;
+  background-color: aliceblue;
 }
 
 .mapComponentNormal {
@@ -706,6 +807,11 @@ export default {
 .center-button {
   margin:0 auto;
   display: block;
+}
+
+.dialog-button {
+  float: left;
+  margin: 0.2rem;
 }
 
 .left-column {

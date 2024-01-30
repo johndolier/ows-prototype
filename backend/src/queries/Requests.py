@@ -37,3 +37,7 @@ class NotebookExportRequest(BaseModel):
 class GeotweetRequest(BaseModel):
     only_floods: bool
     limit: PositiveInt
+
+
+class GraphKeywordRequest(BaseModel):
+    keywords: list[str]

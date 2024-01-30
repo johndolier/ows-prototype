@@ -160,33 +160,13 @@ class DataRetriever:
         result = [e for e in result]
 
         # add attributes to stac dictionary (score, eo_objects, loading (flag), stac_items (empty list))
-        transformed_results = []
-        for doc in result:
-            stac = doc.get('stac')
-            if not stac:
-                continue
-            score = doc.get('score', 10)
-            stac['score'] = score
-            stac_source = doc.get('stac_source', [])
-            if len(stac_source) == 1:
-                stac_source = stac_source[0]
-            else:
-                stac_source = {}
-            stac['stac_source'] = stac_source
-            eo_objects = doc.get('eo_objects', [])
-            eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
-            stac['eo_missions'] = eo_missions
-            stac['eo_instruments'] = eo_instruments
-            stac['loading'] = False # hack for frontend 
-            stac['stac_items'] = [] # hack for frontend
-            transformed_results.append(stac)
-
+        transformed_results = self.__transform_raw_stac_collection_results(result)
         return transformed_results
 
     def get_all_keywords(self, batchSize:int = 1000):
         try:
             result = self.db.AQLQuery(ALL_KEWORDS_QUERY, batchSize=batchSize, rawResults=True)
-            result = [key for key in result] # transform query object to list of keywords
+            result = [key['_key'] for key in result] # transform query object to list of keywords
         except Exception as e:
             print(e)
             result = []
@@ -216,19 +196,7 @@ class DataRetriever:
             result = []
         # convert iterable query to list of dicts
         # transform dictionary
-        transformed_results = []
-        for doc in result:
-            pub = doc.get('pub')
-            if not pub:
-                continue
-            score = doc.get('score', 0)
-            pub['score'] = score
-            eo_objects = doc.get('eo_objects', [])
-            eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
-            pub['eo_missions'] = eo_missions
-            pub['eo_instruments'] = eo_instruments
-            transformed_results.append(pub)
-
+        transformed_results = self.__transform_raw_publication_results(result)
         return transformed_results
 
     def get_geotweets(self, only_floods:bool=False, limit:int = 100) -> list[dict]:
@@ -258,7 +226,31 @@ class DataRetriever:
         
         return filtered_tweets[:limit]
         
-
+    def make_graph_keyword_query(self, keywords:list[str]):
+        ''' Makes graph query for publications and stac collections that are connected to the given keywords
+            additionally makes normal web query with keyword list to get web documents (currently disabled)
+        '''
+        query_params = {'keyword_list': keywords}
+        try:
+            results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=query_params, rawResults=True)
+            results = [e for e in results]
+            stac_collections = self.__transform_raw_stac_collection_results(results)
+        except Exception as e:
+            print(e)
+            stac_collections = []
+        
+        try:
+            results = self.db.AQLQuery(GRAPH_KEYWORD_PUB_QUERY, bindVars=query_params, rawResults=True)
+            publications = self.__transform_raw_publication_results(results)
+        except Exception as e:
+            print(e)
+            publications = []
+        
+        # web_results = self.make_web_query(query=' '.join(keywords), limit=100)
+        # return {'stac_collections': stac_collections, 'publications': publications, 'web_documents': web_results}
+        return {'stac_collections': stac_collections, 'publications': publications}      
+        
+        
   # WEB QUERY HELPER FUNCTIONS
     def __make_web_query_chatnoir(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
         body = {
@@ -436,6 +428,46 @@ time_end = datetime.strptime(time_end_str, date_format)
 time_range = [time_start, time_end]
 
 """
+
+    def __transform_raw_stac_collection_results(self, results):
+        transformed_results = []
+        for doc in results:
+            stac = doc.get('stac')
+            if not stac:
+                continue
+            score = doc.get('score', 10)
+            stac['score'] = score
+            stac_source = doc.get('stac_source', [])
+            if len(stac_source) == 1:
+                stac_source = stac_source[0]
+            else:
+                stac_source = {}
+            stac['stac_source'] = stac_source
+            eo_objects = doc.get('eo_objects', [])
+            eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
+            stac['eo_missions'] = eo_missions
+            stac['eo_instruments'] = eo_instruments
+            stac['loading'] = False # hack for frontend 
+            stac['stac_items'] = [] # hack for frontend
+            transformed_results.append(stac)
+        return transformed_results
+    
+  # PUBLICATION QUERY HELPER FUNCTIONS
+    def __transform_raw_publication_results(self, results):
+        transformed_results = []
+        for doc in results:
+            pub = doc.get('pub')
+            if not pub:
+                continue
+            score = doc.get('score', 0)
+            pub['score'] = score
+            eo_objects = doc.get('eo_objects', [])
+            eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
+            pub['eo_missions'] = eo_missions
+            pub['eo_instruments'] = eo_instruments
+            transformed_results.append(pub)
+        return transformed_results
+    
 
   # ARANGODB QUERY HELPER FUNCTIONS
 
