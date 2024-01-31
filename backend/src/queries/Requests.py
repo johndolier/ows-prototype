@@ -41,3 +41,5 @@ class GeotweetRequest(BaseModel):
 
 class GraphQueryRequest(BaseModel):
     keywords: list[dict]
+    authors: list[dict]
+

@@ -12,8 +12,13 @@ FOR stac_coll in STACCollection
 """
 
 
-ALL_KEWORDS_QUERY = """
+ALL_KEYWORDS_QUERY = """
 FOR v in Keyword
+    RETURN v
+"""
+
+ALL_AUTHORS_QUERY = """
+FOR v in Author
     RETURN v
 """
 

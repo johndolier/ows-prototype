@@ -165,7 +165,7 @@ class DataRetriever:
 
     def get_all_keywords(self, batchSize:int = 1000):
         try:
-            result = self.db.AQLQuery(ALL_KEWORDS_QUERY, batchSize=batchSize, rawResults=True)
+            result = self.db.AQLQuery(ALL_KEYWORDS_QUERY, batchSize=batchSize, rawResults=True)
             keyword_list = []
             for node in result:
                 keyword_list.append({
@@ -176,6 +176,26 @@ class DataRetriever:
             print(e)
             keyword_list = []
         return keyword_list
+    
+    def get_all_authors(self, batchSize:int = 1000):
+        try:
+            result = self.db.AQLQuery(ALL_AUTHORS_QUERY, batchSize=batchSize, rawResults=True)
+            author_list = []
+            for node in result:
+                first_name = node['first_name']
+                last_name = node['last_name']
+                name = f"{first_name} {last_name}"
+                author_list.append({
+                    'id': node['_id'], 
+                    'first_name': first_name, 
+                    'last_name': last_name, 
+                    'name': name
+                })
+        except Exception as e:
+            print(e)
+            author_list = []
+        return author_list
+    
     
     def make_publications_query(self, query:str, keywords:list[str] = None, limit:int = 500) -> list[dict]:
         '''
@@ -230,22 +250,14 @@ class DataRetriever:
                 continue
         
         return filtered_tweets[:limit]
-        
-    def make_graph_query(self, keywords_list:list[str]):
+    
+    def make_graph_query(self, keywords_list, authors_list):
         ''' Makes graph query for publications and stac collections that are connected to the given keywords and authors (in case with publications)
             additionally makes normal web query with keyword list to get web documents (currently disabled)
         '''
         
-        authors = []
-        keywords = []
-        for element in keywords_list:
-            if element['id'].startswith('Author'):
-                authors.append(element['id'])
-            elif element['id'].startswith('Keyword'):
-                keywords.append(element['id'])
-            else:
-                # error
-                continue
+        authors = [element['id'] for element in authors_list]
+        keywords = [element['id'] for element in keywords_list]
         
         stac_query_params = {'keyword_list': keywords}
         try:

@@ -1,5 +1,9 @@
 <template>
   <div class="w-full">
+    <PToast 
+      position="top-center" 
+      group="tc" 
+    />
     <div class="my-1">
       <span :class="queryIsLoading ? 'p-input-icon-right w-9' : 'p-input-icon-left w-9'">
         <i :class="queryIsLoading ? 'pi pi-spin pi-spinner' : 'pi pi-search'"></i>
@@ -22,23 +26,50 @@
       />
     </div>
     <div v-if="showAdvancedSearch" class="my-1">
-      <AutoComplete 
-        v-model="selectedKeywords"
-        option-label="name"
-        multiple
-        :suggestions="filteredKeywords"
-        @complete="searchKeywords"
-        placeholder="Add keyword..."
-        class="w-9"
-      />
-      <PButton
-        @click="graphSearch"
-        severity="warning"
-        label="Graph Search"
-        icon="pi pi-share-alt"
-        icon-pos="left"
-        class="mx-2 w-1"
-      />
+      <div class="left-block">
+        <div class="float-left filter-label font-bold m-2">
+          <i class="pi pi-filter mx-1"></i>
+          <label>Filters:</label>
+        </div>
+        <AutoComplete 
+          v-model="selectedKeywords"
+          option-label="name"
+          multiple
+          :suggestions="filteredKeywords"
+          @complete="searchKeywords"
+          placeholder="Search for keywords..."
+          class="w-full"
+        />
+        <AutoComplete 
+          v-model="selectedAuthors"
+          option-label="name"
+          multiple
+          :suggestions="filteredAuthors"
+          @complete="searchAuthors"
+          placeholder="Search for authors..."
+          class="w-full"
+        />
+      </div>
+      <div class="right-block">
+        <PButton
+          @click="graphSearch"
+          severity="warning"
+          label="Graph Search"
+          icon="pi pi-share-alt"
+          icon-pos="left"
+          size="large"
+          class="mx-2 h-4rem"
+        />
+        <PButton 
+          @click="applyFilter"
+          severity="info"
+          label="Apply Filter"
+          icon="pi pi-filter"
+          icon-pos="left"
+          size="large"
+          class="mx-2 h-4rem"
+        />
+      </div>
     </div>
     <div v-if="showAdvancedSearchButton" class="center-x">
       <PButton 
@@ -70,20 +101,25 @@ export default {
     placeholder: String, 
     homeViewQuery: String, 
     keywords: Array, 
+    authors: Array, 
   }, 
 
   emits: [
     'submitQuery', 
     'advancedSearchClick',
     'graphQuery', 
+    'applyFilter', 
   ], 
   data() {
     return {
       userQuery: null, 
       selectedKeywords: [],
       filteredKeywords: null, 
+      selectedAuthors: [], 
+      filteredAuthors: null, 
     }
-  }, 
+  },
+
   methods: {
     searchKeywords(event) {
       setTimeout(() => {
@@ -96,9 +132,33 @@ export default {
         }
       }, 250);
     }, 
+    searchAuthors(event) {
+      setTimeout(() => {
+        if (!event.query.trim().length) {
+          this.filteredAuthors = [...this.authors];
+        } else {
+          this.filteredAuthors = this.authors.filter((author) => {
+            return author.name.toLowerCase().startsWith(event.query.toLowerCase());
+          });
+        }
+      }, 250);
+    }, 
     graphSearch() {
       // search graph based on selected keywords
-      this.$emit('graphQuery', this.selectedKeywords);
+      if (this.selectedKeywords.length == 0 && this.selectedAuthors.length == 0) {
+        this.$toast.add({
+          severity: 'error', 
+          summary: 'No Input', 
+          detail: 'Please enter at least one keyword for the graph search', 
+          life: 5000, 
+          group: 'tc'
+        });
+        return;
+      }
+      this.$emit('graphQuery', this.selectedKeywords, this.selectedAuthors);
+    }, 
+    applyFilter() {
+      this.$emit('applyFilter', this.selectedKeywords, this.selectedAuthors);
     }, 
   }, 
   watch: {
@@ -117,3 +177,21 @@ export default {
 }
 
 </script>
+
+
+<style scoped>
+
+.left-block {
+  width: 75%;
+  display: inline-block;
+}
+
+.right-block {
+  display: inline-block;
+}
+
+.filter-label{
+  color: white;
+}
+
+</style>
