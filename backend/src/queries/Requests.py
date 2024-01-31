@@ -11,6 +11,7 @@ class STACCollectionRequest(BaseModel):
 class WebRequest(BaseModel):
     query: str
     limit: PositiveInt
+    location_filter: object | None = None
 
 class PubRequest(BaseModel):
     query: str

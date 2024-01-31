@@ -53,16 +53,17 @@ class DataRetriever:
         self.stac_source_dict = self.__fetch_stac_source_information()
 
 
-    def make_web_query(self, query:str, limit:int, verbose:bool=False):
+    def make_web_query(self, query:str, limit:int, location_filter:dict, verbose:bool=False):
         '''
             Makes web query on selected source (chatnoir or prototype webindex application -> OWS)
+            Mosaic request also takes location filter
         '''
         if self.index_source == "chatnoir":
             results = self.__make_web_query_chatnoir(query=query, limit=limit, verbose=verbose)
         elif self.index_source == "prototype_webindex":
             results = self.__make_web_query_prototype_webindex(query=query, limit=limit, verbose=verbose)
         elif self.index_source == "mosaic":
-            results = self.__make_web_query_mosaic_webindex(query=query, limit=limit, verbose=verbose)
+            results = self.__make_web_query_mosaic_webindex(query=query, limit=limit, location_filter=location_filter, verbose=verbose)
         else:
             print(f"error - invalid state! did not find web index source for {self.index_source}")
             results = None
@@ -343,8 +344,13 @@ class DataRetriever:
             })
         return transformed_results
 
-    def __make_web_query_mosaic_webindex(self, query:str, limit:int = 1000, verbose:bool = False) -> list[dict]:
-        request_url = f"{MOSAIC_ENDPOINT}search?q={query}&index={DEMO_INDEX_MOSAIC}&limit={limit}"
+    def __make_web_query_mosaic_webindex(self, query:str, limit:int = 1000, location_filter:dict={}, verbose:bool = False) -> list[dict]:
+        bbox = self.__get_bbox_from_location_filters(location_filter=location_filter)
+        if bbox:
+            # bbox is S,W,N,E
+            request_url = f"{MOSAIC_ENDPOINT}search?q={query}&index={DEMO_INDEX_MOSAIC}&limit={limit}&east={bbox[3]}&west={bbox[1]}&north={bbox[2]}&south={bbox[0]}"
+        else:
+            request_url = f"{MOSAIC_ENDPOINT}search?q={query}&index={DEMO_INDEX_MOSAIC}&limit={limit}"
         if verbose:
             print(f"making request on url: {request_url}")
         response = requests.get(request_url)
@@ -410,6 +416,17 @@ class DataRetriever:
             catalog = pystac_client.Client.open(catalog_url)
         return catalog
 
+    def __get_bbox_from_location_filters(self, location_filter:dict):
+        if not isinstance(location_filter, dict) or not location_filter:
+            # location filter is empty or not a dictionary!
+            return None
+        
+        if location_filter['type'] == 'bbox':
+            return location_filter['coords']
+        else:
+            # TODO handle different shapes
+            return None
+        
     def __get_geojson_from_location_filters(self, location_filter:dict):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO handle multiple different shapes

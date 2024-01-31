@@ -446,7 +446,6 @@ export default {
     }, 
     // BACKEND QUERY METHODS
     async submitQuery(userQuery) {
-      //console.log("starting to submit query");
       if (userQuery == null) {
         //console.log("no user query provided");
         this.$toast.add({
@@ -480,12 +479,14 @@ export default {
       }
 
       // after setting analyzer results from Query Analyzer, continue with normal document query
+      this.locationFilter = this.getLocationFilter();
       await this.makeDocumentQueryRequest(userQuery, keywords);
       this.lastUserQuery = userQuery;
       this.homeViewQuery = userQuery;
       // let "topResults" appear and hide map
       this.refreshUIAfterQuery();
     }, 
+
     async makeDocumentQueryRequest(userQuery, keywords) {
       const promises = []; 
       if (this.selectPublications) {
@@ -635,7 +636,9 @@ export default {
       const request = {
         'query': userQuery, 
         'limit': 10, 
+        'location_filter': this.locationFilter
       };
+      console.log(request);
       return axios.post(path, request);
     }, 
     async requestSTACCollections(userQuery, keywords) {

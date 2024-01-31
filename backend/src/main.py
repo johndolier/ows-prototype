@@ -108,7 +108,7 @@ def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[d
 
 @app.post("/webRequest")
 def web_request(request: WebRequest) -> tuple[str, list[dict]]:
-    results = data_retriever.make_web_query(query=request.query, limit=request.limit, verbose=True)
+    results = data_retriever.make_web_query(query=request.query, limit=request.limit, location_filter=request.location_filter, verbose=True)
     return ('web_documents', results)
 
 @app.get("/keywordRequest")

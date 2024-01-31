@@ -128,8 +128,15 @@ export default {
       filterBounds: null,
       // UI state elements
       isDrawing: false, 
-      polygonSelected: true, 
+      polygonSelected: false, 
       drawItems: [
+        {
+          label: 'Rectangle',
+          icon: 'pi pi-stop',
+          command: () => {
+            this.polygonSelected = false;
+          }
+        }, 
         {
           label: 'Polygon',
           icon: 'pi pi-caret-up',
@@ -137,13 +144,6 @@ export default {
             this.polygonSelected = true;
           }
         },
-        {
-          label: 'Rectangle',
-          icon: 'pi pi-stop',
-          command: () => {
-            this.polygonSelected = false;
-          }
-        }
       ] 
     }
   },
