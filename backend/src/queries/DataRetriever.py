@@ -14,6 +14,10 @@ from queries.arango_queries import *
 
 CHATNOIR_ENDPOINT = 'https://chatnoir.web.webis.de/api/v1/_search'
 PROTOTYPE_WEBINDEX_ENDPOINT = 'https://qnode.eu/ows/prosa/service/'
+MOSAIC_ENDPOINT = 'https://qnode.eu/ows/mosaic/service/'
+
+DEMO_INDEX_MOSAIC = "dlrprototype"
+DEMO_INDEX_STANDARD = "demo-dlrsciencesearch"
 
 PC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 TERRABYTE_API = "https://stac.terrabyte.lrz.de/public/api"
@@ -35,6 +39,9 @@ class DataRetriever:
             # prototype webindex
             print("DataRetriever - using prototype web index")
             self.index_source = "prototype_webindex"
+        elif web_api == 3:
+            print("DataRetriever - using Mosaic open web index")
+            self.index_source = "mosaic"
         else:
             # default
             print("Error - invalid web api source!")
@@ -53,6 +60,8 @@ class DataRetriever:
             results = self.__make_web_query_chatnoir(query=query, limit=limit, verbose=verbose)
         elif self.index_source == "prototype_webindex":
             results = self.__make_web_query_prototype_webindex(query=query, limit=limit, verbose=verbose)
+        elif self.index_source == "mosaic":
+            results = self.__make_web_query_mosaic_webindex(query=query, limit=limit, verbose=verbose)
         else:
             print(f"error - invalid state! did not find web index source for {self.index_source}")
             results = None
@@ -297,11 +306,12 @@ class DataRetriever:
                 'url': url, 
                 'text': text, 
                 'is_html': True,
+                'locations': [], 
             })
         return transformed_results
 
     def __make_web_query_prototype_webindex(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
-        request_url = f"{PROTOTYPE_WEBINDEX_ENDPOINT}search?q={query}&index=demo-dlrsciencesearch&limit={limit}"
+        request_url = f"{PROTOTYPE_WEBINDEX_ENDPOINT}search?q={query}&index={DEMO_INDEX_STANDARD}&limit={limit}"
         if verbose:
             print(f"making request on url: {request_url}")
         
@@ -326,10 +336,65 @@ class DataRetriever:
                 'url': url, 
                 'text': text, 
                 'is_html': False,
+                'locations': [], 
             })
         return transformed_results
 
-  # STAC QUERY HELPER FUNCTIONS
+    def __make_web_query_mosaic_webindex(self, query:str, limit:int = 1000, verbose:bool = False) -> list[dict]:
+        request_url = f"{MOSAIC_ENDPOINT}search?q={query}&index={DEMO_INDEX_MOSAIC}&limit={limit}"
+        if verbose:
+            print(f"making request on url: {request_url}")
+        response = requests.get(request_url)
+        try:
+            response_dict = json.loads(response.text)
+        except Exception as e:
+            print(f"Exception in parsing response - {e}")
+            print(f"Status code: {response.status_code}")
+            response_dict = {}
+
+        results = response_dict.get('results', [])
+        if not results:
+            return []
+
+        results = results[0]['dlrprototype']
+        
+        # transform results to fit standardized interface
+        transformed_results = []
+        for result in results:
+            title = result.get('title', '')
+            url = result.get('url', '')
+            text = result.get('textSnippet', '')
+            locations = result.get('locations', [])
+            locations = self.__transform_locations_from_web_query(locations)
+            transformed_results.append({
+                'title': title, 
+                'url': url, 
+                'text': text, 
+                'is_html': False,
+                'locations': locations, 
+            })
+        return transformed_results
+    
+    def __transform_locations_from_web_query(self, raw_locations_list):
+        locations = []
+        for location in raw_locations_list:
+            loc_name = location.get('locationName')
+            loc_entries = location.get('locationEntries', [])
+            points = []
+            for entry in loc_entries:
+                lat = entry['latitude']
+                long = entry['longitude']
+                # TODO fetch other info (e.g. country code)
+                points.append((long, lat))
+            multipoint_geojson = geojson.MultiPoint(points)
+            location = {
+                'name': loc_name, 
+                'geojson': multipoint_geojson
+            }
+            locations.append(location)
+        return locations
+
+# STAC QUERY HELPER FUNCTIONS
     def __get_catalog(self, catalog_url:str):
         if "planetarycomputer" in catalog_url:
             catalog = pystac_client.Client.open(catalog_url, modifier=planetary_computer.sign_inplace)

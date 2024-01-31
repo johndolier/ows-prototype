@@ -1,5 +1,18 @@
 
 <template>
+<div>
+  <OverlayPanel ref="op">
+    <span
+      v-for="location in content.locations" :key="location.name"
+      class="p-1 float-left" >
+      <PButton 
+        class="tag-button"
+        :label="location.name"
+        severity="info"
+        @click="locationClicked(location)"
+      />
+    </span>
+  </OverlayPanel>
   <Card>
     <template #title>
       <PButton id="titleElement"
@@ -19,15 +32,22 @@
       </PButton>
     </template>
     <template #content>
-      <!-- <div>
-        <span class="w-full">
-          <Tag 
-            class="mx-2" 
-            value="Web Document" 
-            severity="warning"
-          />
-        </span>
-      </div> -->
+      <div v-if="hasGeodata">
+        <PButton 
+          class="float-right m-2"
+          label="Show On Map"
+          icon="pi pi-map"
+          severity="success"
+          @click="showGeodata"
+        />
+        <PButton 
+          class="float-right m-2"
+          label="Locations"
+          icon="pi pi-compass"
+          severity=""
+          @click="showLocations"
+        />
+      </div>
       <p ref="contentRef"
         v-if="content.is_html" 
         :class="showMore ? 'more-text' : 'less-text'"
@@ -44,7 +64,8 @@
         @click="showMoreClicked"
       />
     </template>
-  </Card>     
+  </Card>
+</div>
 </template>
 
 <script>
@@ -71,6 +92,20 @@ export default {
     }
   }, 
 
+  computed: {
+    hasGeodata() {
+      // console.log(this.content.locations);
+      if (this.content.locations.length > 0) {
+        return true;
+      }
+      return false;
+    }, 
+    geodata() {
+      console.log(this.content.locations);
+      return this.content.locations;
+    }
+  }, 
+
   methods: {
     openLink(link) {
       try {
@@ -82,7 +117,17 @@ export default {
     }, 
     showMoreClicked() {
       this.showMore = !this.showMore;
-    }
+    }, 
+    showGeodata() {
+      console.log(this.content.locations);
+    }, 
+    locationClicked(location) {
+      console.log(location);
+    }, 
+    showLocations(event) {
+      this.$refs.op.toggle(event);
+    }, 
+
   }, 
 
   mounted() {
@@ -90,6 +135,7 @@ export default {
     if (this.$refs.contentRef && this.$refs.contentRef.scrollHeight > (this.$refs.contentRef.clientHeight + 5)) {
       this.contentOverflown = true;
     }
+    // console.log(this.content);
   }
 }
 

@@ -82,46 +82,6 @@
         />
       </div>
     </PDialog>
-    <!-- Siebar component for advanced query and filtering documents -->
-    <!-- <PSidebar 
-      v-model:visible="showAdvancedSearch" 
-      position="left" 
-      :modal="false"
-    >
-      <h2>
-        Advanced Search
-      </h2>
-      <div class="advanced-search-element">
-        <p 
-          align="left" 
-          class="advanced-search-header"
-        >
-          Time Filter
-        </p>
-        <VueDatePicker 
-          v-model="timeRangeFilter" 
-          range 
-          :partial-range="false" 
-          class="advanced-search-body"
-        />
-        <PButton 
-          v-if="timeSelected"
-          class="my-2 center-button"
-          severity="danger"
-          icon="pi pi-ban"
-          label="Clear Time Selection"
-          @click="clearTimeSelection" 
-        />
-      </div>
-      <PButton 
-        v-if="!showStartScreen" 
-        class="my-2" 
-        severity="info" 
-        label="SHOW GEOTWEETS (DEBUG)"
-        @click="requestGeotweets" 
-      />
-    </PSidebar> -->
-
     <div v-if="showStartScreen">
       <div 
         id="appHeader" 

@@ -65,6 +65,10 @@ html,body {
     margin-left:2px;
   }
 
+.float-right {
+    float:right;
+}
+
 .element-card {
     width: 100%;
     min-width: 5rem;
