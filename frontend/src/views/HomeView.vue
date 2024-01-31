@@ -132,6 +132,7 @@
             @showSTACItemsOnMap="showSTACItemsOnMap"
             @showSpatialExtent="showSpatialExtent"
             @keyword-clicked="keywordClicked"
+            @show-geodata="showGeodata"
           />
         </div>
         <div class="right-column">
@@ -147,6 +148,7 @@
             @stacItemClicked="stacItemClicked"
             @fixMapClicked="fixMapClicked" 
             @clearSTACLayers="clearSTACLayers"
+            @web-document-clicked-in-map="webDocumentClickedInMap"
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
@@ -333,6 +335,29 @@ export default {
         this.$refs.mapRef.showSpatialExtent(bboxList);
       }
     }, 
+    showGeodata(location) {
+      // show geodata from web items on map
+      this.showWebDocumentsOnMap();
+      this.focusOnMap();
+      if (this.$refs.mapRef) {
+        this.$refs.mapRef.showGeodata(location);
+      }
+    }, 
+    webDocumentClickedInMap(webDocId) {
+      for (const webDoc of this.documents.web_documents) {
+        if (webDoc.id == webDocId) {
+          window.open(webDoc.url);
+          return;
+        }
+      }
+      console.log("error - did not find web document for " + webDocId);
+    }, 
+
+    showWebDocumentsOnMap() {
+      if (this.$refs.mapRef) {
+        this.$refs.mapRef.createWebDocumentLayer();
+      }
+    }, 
 
     // UI STATE METHODS
     refreshUIAfterQuery() {
@@ -353,6 +378,9 @@ export default {
       this.showMap = !this.showMap;
       if (!this.showMap) {
         this.fixMap = false;
+      }
+      if (this.showMap) {
+        this.$refs.mapRef.createWebDocumentLayer();
       }
     }, 
     clearTimeSelection() {
@@ -496,7 +524,7 @@ export default {
         if (this.showStartScreen) {
           this.showStartScreen = false;
         }
-        // this.showMapAndList();        
+        this.showWebDocumentsOnMap();
       }
     }, 
     async continueStacItemQuery(stacCollectionID) {

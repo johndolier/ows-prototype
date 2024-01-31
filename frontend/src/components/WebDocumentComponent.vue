@@ -1,7 +1,7 @@
 
 <template>
 <div>
-  <OverlayPanel ref="op">
+  <!-- <OverlayPanel ref="op">
     <span
       v-for="location in content.locations" :key="location.name"
       class="p-1 float-left" >
@@ -12,7 +12,7 @@
         @click="locationClicked(location)"
       />
     </span>
-  </OverlayPanel>
+  </OverlayPanel> -->
   <Card>
     <template #title>
       <PButton id="titleElement"
@@ -42,10 +42,9 @@
         />
         <PButton 
           class="float-right m-2"
-          label="Locations"
+          :label="location.name"
           icon="pi pi-compass"
           severity=""
-          @click="showLocations"
         />
       </div>
       <p ref="contentRef"
@@ -76,6 +75,10 @@ import Card from 'primevue/card';
 export default {
 
   name: "WebDocumentComponent", 
+
+  emits: [
+    "showGeodata"
+  ], 
   
   components: {
     Card, 
@@ -100,9 +103,11 @@ export default {
       }
       return false;
     }, 
-    geodata() {
-      console.log(this.content.locations);
-      return this.content.locations;
+    location() {
+      if (this.hasGeodata) {
+        return this.content.locations[0];
+      }
+      return null;
     }
   }, 
 
@@ -119,15 +124,13 @@ export default {
       this.showMore = !this.showMore;
     }, 
     showGeodata() {
-      console.log(this.content.locations);
-    }, 
-    locationClicked(location) {
-      console.log(location);
+      this.$emit('showGeodata', this.location);
     }, 
     showLocations(event) {
-      this.$refs.op.toggle(event);
+      // disabled
+      // this.$refs.op.toggle(event);
+      console.log(event);
     }, 
-
   }, 
 
   mounted() {

@@ -75,6 +75,17 @@ require('leaflet-draw');
 
 import { toRaw } from 'vue';
 
+
+// workaround to make leaflet marker visible in Vue Framework
+// https://stackoverflow.com/questions/41144319/leaflet-marker-not-found-production-env
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+  iconUrl: require("leaflet/dist/images/marker-icon.png"),
+  shadowUrl: require("leaflet/dist/images/marker-shadow.png")
+});
+
+
 export default {
 
   name: "MapComponent",
@@ -91,9 +102,9 @@ export default {
     'showMapClicked', 
     'fixMapClicked', 
     'clearSTACLayers', 
+    'webDocumentClickedInMap',
   //  'requestGeotweets',   // triggers request to backend to retrieve geotweets (example)
   ], 
-  components: {},
 
   data() {
     return {
@@ -106,6 +117,7 @@ export default {
       drawnLayers: null, // FeatureGroup
       heatLayer: null, // Layer 
       spatialExtentLayer: null, // FeatureGroup
+      webDocumentLayer: null, 
       // layer control
       layerControl: null,
       // draw controller
@@ -168,6 +180,9 @@ export default {
     clearAllLayers() {
       // remove filter areas
       this.clearFilterLayer();
+
+      // clear geolocations from web documents
+      this.webDocumentLayer.clearLayers();
 
       // remove STAC layers
       this.clearSTACLayers();
@@ -326,6 +341,36 @@ export default {
         }
       ).addTo(toRaw(this.map));
     }, 
+
+    showGeodata(location) {
+      //this.addWebDocuWmentLayer();
+      const coordinates = location.geojson.coordinates[0];
+      this.map.flyTo([coordinates[1], coordinates[0]]);
+    }, 
+
+    createWebDocumentLayer() {
+      // loops over all current web documents and adds markers to the web document layer
+      this.webDocumentLayer.clearLayers();
+      for (const webDoc of this.documents.web_documents) {
+        if (webDoc.locations.length == 0) {
+          // no locations
+          continue;
+        }
+        // for now, only first location is added as marker
+        const coordinates = webDoc.locations[0].geojson.coordinates;
+        const m = new L.marker([coordinates[0][1], coordinates[0][0]], {
+            'title': webDoc.title, 
+            'id': webDoc.id
+          }
+        );
+        m.on('click', (e) => {
+          const id = e.sourceTarget.options.id
+          this.$emit('webDocumentClickedInMap', id);
+        });
+        m.addTo(this.webDocumentLayer);
+      }
+    }, 
+
     async createMap() {
       // this function is called to create a new map instance and initiate "this.map"
       const defaultFocus = [45, 20];
@@ -358,6 +403,10 @@ export default {
       this.spatialExtentLayer = new L.FeatureGroup();
       this.spatialExtentLayer.addTo(toRaw(this.map));
 
+      // add web document layer
+      this.webDocumentLayer = new L.FeatureGroup();
+      this.webDocumentLayer.addTo(toRaw(this.map));
+
       // add layer control
       // first, create base maps
       const baseMaps = {
@@ -368,6 +417,7 @@ export default {
       const overlayMaps = {
         "Filter Layer": this.drawnLayers,
         "Spatial Extent": this.spatialExtentLayer,
+        "Web Documents": this.webDocumentLayer, 
       }
 
       this.layerControl = L.control.layers(baseMaps, overlayMaps).addTo(toRaw(this.map));

@@ -51,6 +51,7 @@
                 <WebDocumentComponent 
                   class="element-card" 
                   :content="slotProps.data[1]" 
+                  @show-geodata="showGeodata"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'stac_collection'">
@@ -117,6 +118,7 @@ export default {
     'showSTACItemsOnMap', 
     'showSpatialExtent', 
     'keywordClicked', 
+    'showGeodata', 
   ], 
 
   data () {
@@ -200,6 +202,9 @@ export default {
     }, 
     keywordClicked(keyword) {
       this.$emit('keywordClicked', keyword);
+    }, 
+    showGeodata(location) {
+      this.$emit('showGeodata', location);
     }, 
   }, 
   watch: {

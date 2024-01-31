@@ -6,6 +6,7 @@ import planetary_computer
 from pyArango.connection import DBHandle
 from sentence_transformers import SentenceTransformer
 import nbformat as nbf
+import uuid
 
 
 from utils import normalize_scoring_range
@@ -302,6 +303,7 @@ class DataRetriever:
             url = result.get('target_uri', '')
             text = result.get('snippet', '')
             transformed_results.append({
+                'id': uuid.uuid4(), 
                 'title': title, 
                 'url': url, 
                 'text': text, 
@@ -332,6 +334,7 @@ class DataRetriever:
             url = result.get('url', '')
             text = result.get('textSnippet', '')
             transformed_results.append({
+                'id': uuid.uuid4(), 
                 'title': title, 
                 'url': url, 
                 'text': text, 
@@ -367,6 +370,7 @@ class DataRetriever:
             locations = result.get('locations', [])
             locations = self.__transform_locations_from_web_query(locations)
             transformed_results.append({
+                'id': uuid.uuid4(), 
                 'title': title, 
                 'url': url, 
                 'text': text, 
@@ -377,10 +381,13 @@ class DataRetriever:
     
     def __transform_locations_from_web_query(self, raw_locations_list):
         locations = []
+        # for now, only the first location is parsed, rest is discarded
         for location in raw_locations_list:
             loc_name = location.get('locationName')
             loc_entries = location.get('locationEntries', [])
             points = []
+            if len(loc_entries) > 1:
+                print(loc_entries)
             for entry in loc_entries:
                 lat = entry['latitude']
                 long = entry['longitude']
@@ -392,6 +399,7 @@ class DataRetriever:
                 'geojson': multipoint_geojson
             }
             locations.append(location)
+            break
         return locations
 
 # STAC QUERY HELPER FUNCTIONS
