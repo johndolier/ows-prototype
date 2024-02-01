@@ -369,9 +369,9 @@ export default {
       this.stacItems[stacCollectionID]['requests'][requestUID].highlightID = stacItemID;
     },
     showSTACItemsOnMap(stacCollectionID, requestUID) {
-      console.log("show stac items on map");
-      console.log(stacCollectionID);
-      console.log(requestUID);
+      // console.log("show stac items on map");
+      // console.log(stacCollectionID);
+      // console.log(requestUID);
       this.focusOnMap();
       if (this.$refs.mapRef !== undefined) {
         this.$refs.mapRef.focusMapOnSTACLayer(stacCollectionID, requestUID);
@@ -405,6 +405,18 @@ export default {
       return documents;
 
     },
+    
+    // graph / filter helper methods
+    resetFilters() {
+      if (this.$refs.searchHeaderRef) {
+        this.$refs.searchHeaderRef.selectedKeywords = [];
+        this.$refs.searchHeaderRef.selectedAuthors = []; 
+      }
+      else {
+        console.log("warning - cannot reset filters because search header ref does not exist");
+      }
+    }, 
+
     filterDocuments(selectedKeywords, selectedAuthors) {
       // whenever this method is run, the documents get updated based on the current filters that are applied
       if (!this.$refs.searchHeaderRef) {
@@ -566,7 +578,6 @@ export default {
         'keywords': keywords, 
         'authors': authors, 
       }
-      console.log(request);
       const response = await axios.post('/graphQueryRequest', request);
       if (response.status  != 200) {
         console.log("error - could not fetch graph query");
@@ -575,9 +586,15 @@ export default {
       // parse response
       this.rawDocuments['stac_collections'] = response.data.stac_collections;
       this.rawDocuments['publications'] = response.data.publications;
-      // console.log(this.rawDocuments.stac_collections.length);
-      // console.log(this.rawDocuments.publications.length);
-      // this.rawDocuments['web_documents'] = response.data.web_documents;
+
+      // TODO set last user query to graph search
+      this.lastUserQuery = "Graph Search";
+
+      // reset filters after graph query
+      this.resetFilters();
+      this.filterDocuments([], []);
+
+      // TODO what happens with web data ?
     }, 
   
     // BACKEND QUERY HELPER METHODS
@@ -670,11 +687,8 @@ export default {
           this.showStartScreen = false;
         }
         // reset filters
-        if (this.$refs.searchHeaderRef) {
-          this.$refs.searchHeaderRef.selectedKeywords = [];
-          this.$refs.searchHeaderRef.selectedAuthors = []; 
-        }
-        this.filteredDocuments = this.rawDocuments;
+        this.resetFilters();
+        this.filterDocuments([], []);
       }
     }, 
     async continueStacItemQuery(stacCollectionID) {
@@ -859,7 +873,7 @@ export default {
 }
 
 #documentBodyExtended {
-    margin-top: 170px;
+    margin-top: 245px;
 }
 
 #appHeader {

@@ -60,15 +60,6 @@
           size="large"
           class="mx-2 h-4rem"
         />
-        <PButton 
-          @click="applyFilter"
-          severity="info"
-          label="Apply Filter"
-          icon="pi pi-filter"
-          icon-pos="left"
-          size="large"
-          class="mx-2 h-4rem"
-        />
       </div>
     </div>
     <div v-if="showAdvancedSearchButton" class="center-x">
@@ -170,9 +161,18 @@ export default {
         this.userQuery = this.selectedKeywords.map(function(keyword) {
           return keyword.name;
         }).join(' ');
+
+        // trigger filter
+        this.applyFilter();
       }, 
       deep: true, 
     }, 
+    selectedAuthors: {
+      handler() {
+        this.applyFilter();
+      }, 
+      deep: true, 
+    }
   }
 }
 
@@ -182,7 +182,7 @@ export default {
 <style scoped>
 
 .left-block {
-  width: 75%;
+  width: 50%;
   display: inline-block;
 }
 
