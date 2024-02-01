@@ -40,5 +40,7 @@ class GeotweetRequest(BaseModel):
     limit: PositiveInt
 
 
-class GraphKeywordRequest(BaseModel):
-    keywords: list[str]
+class GraphQueryRequest(BaseModel):
+    keywords: list[dict]
+    authors: list[dict]
+

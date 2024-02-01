@@ -116,9 +116,14 @@ def get_all_keywords_request():
     keywords = data_retriever.get_all_keywords()
     return keywords
 
-@app.post("/graphKeywordRequest")
-def graph_keyword_request(request: GraphKeywordRequest):
-    results = data_retriever.make_graph_keyword_query(keywords=request.keywords)
+@app.get("/authorRequest")
+def get_all_authors_request():
+    authors = data_retriever.get_all_authors()
+    return authors
+
+@app.post("/graphQueryRequest")
+def graph_query_request(request: GraphQueryRequest):
+    results = data_retriever.make_graph_query(keywords_list=request.keywords, authors_list=request.authors)
     return results
 
 @app.post("/queryAnalyzerRequest")

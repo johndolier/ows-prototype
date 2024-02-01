@@ -12,8 +12,13 @@ FOR stac_coll in STACCollection
 """
 
 
-ALL_KEWORDS_QUERY = """
+ALL_KEYWORDS_QUERY = """
 FOR v in Keyword
+    RETURN v
+"""
+
+ALL_AUTHORS_QUERY = """
+FOR v in Author
     RETURN v
 """
 
@@ -68,8 +73,18 @@ FOR node in pubs_fuzzy
         FOR v in OUTBOUND node.pub._id Mentions
             RETURN {node: v}
     )
+    
+    LET authors = (
+        FOR v in OUTBOUND node.pub._id AuthorOf
+            RETURN {author: v}
+    )
+    
+    LET keywords = (
+        FOR v in OUTBOUND node.pub._id HasKeyword 
+            RETURN {keyword: v}
+    )
 
-    RETURN {pub:node.pub, score:node.score, eo_objects:conn_eo_objects}
+    RETURN {pub:node.pub, score:node.score, eo_objects:conn_eo_objects, authors:authors, keywords:keywords}
     
 """
 
@@ -116,7 +131,12 @@ FOR node in stac_fuzzy
         RETURN {name: v.name, link: v.href}
     )
     
-    RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects, stac_source:stac_source}
+    LET keywords = (
+        FOR v in OUTBOUND node.stac._id HasKeyword 
+            RETURN {keyword: v}
+    )
+    
+    RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects, stac_source:stac_source, keywords:keywords}
 """
 
 
@@ -130,42 +150,48 @@ SIMPLE_STAC_EMB_QUERY:
     + searches for connected EO objects
 '''
 SIMPLE_STAC_EMB_QUERY = """
-    LET query_emb = @query_embedding
+LET query_emb = @query_embedding
 
-    LET query_emb_size = (SQRT(SUM(
-        FOR k IN RANGE(0,768)
-            RETURN POW(TO_NUMBER(NTH(query_emb, k)), 2)
-    )))
+LET query_emb_size = (SQRT(SUM(
+    FOR k IN RANGE(0,768)
+        RETURN POW(TO_NUMBER(NTH(query_emb, k)), 2)
+)))
 
-    LET stac_fuzzy = (
-        FOR v in STACCollection
-            LET v_size = (SQRT(SUM(
-                FOR k IN RANGE(0,768)
-                    RETURN POW(TO_NUMBER(NTH(v.text_embedding, k)), 2)
-            )))
+LET stac_fuzzy = (
+    FOR v in STACCollection
+        LET v_size = (SQRT(SUM(
+            FOR k IN RANGE(0,768)
+                RETURN POW(TO_NUMBER(NTH(v.text_embedding, k)), 2)
+        )))
 
-            LET numerator = (SUM(
-                FOR i in RANGE(0,768)
-                    RETURN TO_NUMBER(NTH(query_emb, i)) * TO_NUMBER(NTH(v.text_embedding, i))
-            ))
+        LET numerator = (SUM(
+            FOR i in RANGE(0,768)
+                RETURN TO_NUMBER(NTH(query_emb, i)) * TO_NUMBER(NTH(v.text_embedding, i))
+        ))
 
-            LET cos_sim = (numerator)/(query_emb_size*v_size)
-            FILTER cos_sim >= @sim_threshold
-            SORT cos_sim DESC
-            //LIMIT @limit 
-            RETURN {stac: v, score:cos_sim}
+        LET cos_sim = (numerator)/(query_emb_size*v_size)
+        FILTER cos_sim >= @sim_threshold
+        SORT cos_sim DESC
+        //LIMIT @limit 
+        RETURN {stac: v, score:cos_sim}
+)
+
+FOR node in stac_fuzzy 
+    LET conn_eo_objects = (
+        FOR v in OUTBOUND node.stac._id Mentions
+        RETURN {node: v}
     )
-
-    FOR node in stac_fuzzy 
-        LET conn_eo_objects = (
-            FOR v in OUTBOUND node.stac._id Mentions
-            RETURN {node: v}
-        )
-        LET stac_source = (
-            FOR v in INBOUND node.stac._id STACSourceContains
-            RETURN {name: v.name, link: v.href}
-        )
-        RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects, stac_source:stac_source}
+    LET stac_source = (
+        FOR v in INBOUND node.stac._id STACSourceContains
+        RETURN {name: v.name, link: v.href}
+    )
+    
+    LET keywords = (
+        FOR v in OUTBOUND node.stac._id HasKeyword 
+            RETURN {keyword: v}
+    )
+    
+    RETURN {stac:node.stac, score:node.score, eo_objects:conn_eo_objects, stac_source:stac_source, keywords:keywords}
 """
 
 '''
@@ -316,10 +342,10 @@ GRAPH_KEYWORD_STAC_QUERY:
 '''
 GRAPH_KEYWORD_STAC_QUERY = """
 LET stac_collections = (
-    FOR keyword in @keyword_list
-        FOR node in STACCollection
-            FILTER POSITION( node.keywords, keyword)
-            RETURN DISTINCT {stac:node, score: 1}
+    FOR keyword_id in @keyword_list
+        FOR v in INBOUND  keyword_id HasKeyword
+            FILTER v._id LIKE "STACCollection/%"
+            RETURN {stac:v, score:1}
 )
 
 FOR node in stac_collections
@@ -331,27 +357,50 @@ FOR node in stac_collections
         FOR v in INBOUND node.stac._id STACSourceContains
         RETURN {name: v.name, link: v.href}
     )
-    RETURN {stac:node.stac, eo_objects:conn_eo_objects, stac_source:stac_source}
+    LET keywords = (
+        FOR v in OUTBOUND node.stac._id HasKeyword 
+            RETURN {keyword: v}
+    )
+    
+    RETURN {stac:node.stac, eo_objects:conn_eo_objects, stac_source:stac_source, keywords:keywords}
 """
 
 '''
 GRAPH_KEYWORD_PUB_QUERY:
     keyword_list: list of keywords to search for
+    author_list: list of authors to search for
     
     returns all  Publications that have a connection to the given keyword
 '''
 GRAPH_KEYWORD_PUB_QUERY = """
-LET pubs = (
-    FOR keyword in @keyword_list
-        FOR node in Publication
-            FILTER POSITION( node.keywords, keyword)
-            RETURN DISTINCT {pub:node, score: 1}
+LET keyword_pubs = (
+    FOR keyword_id in @keyword_list
+        FOR v in INBOUND  keyword_id HasKeyword
+            FILTER v._id LIKE "Publication/%"
+            RETURN DISTINCT {pub:v, score: 1}
 )
+
+LET author_pubs = (
+    FOR author_id in @author_list
+        FOR v in INBOUND  author_id AuthorOf
+            FILTER v._id LIKE "Publication/%"
+            RETURN {pub:v, score:1}
+)
+
+LET pubs = UNION_DISTINCT(keyword_pubs, author_pubs)
 
 FOR node in pubs
     LET conn_eo_objects = (
         FOR v in OUTBOUND node.pub._id Mentions
             RETURN {node: v}
     )
-    RETURN {pub:node.pub, eo_objects:conn_eo_objects}
+    LET authors = (
+        FOR v in OUTBOUND node.pub._id AuthorOf
+            RETURN {author: v}
+    )
+    LET keywords = (
+        FOR v in OUTBOUND node.pub._id HasKeyword 
+            RETURN {keyword: v}
+    )
+    RETURN {pub:node.pub, eo_objects:conn_eo_objects, authors:authors, keywords:keywords}
 """
