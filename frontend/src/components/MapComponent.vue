@@ -31,22 +31,15 @@
         />
         <PButton 
           v-if="isDrawing" 
-          class="inline-flex mx-2 left-button" 
+          class="inline-flex left-button" 
           severity="warning" 
           size="small" 
+          icon="pi pi-times"
           label="STOP DRAWING"
           @click="stopDrawing"
         />
         <PButton 
-          v-if="filterBounds" 
-          class="inline-flex mx-2 left-button" 
-          severity="warning" 
-          size="small" 
-          label="CLEAR FILTER"
-          @click="clearFilterLayer"
-        />
-        <PButton 
-          class="mx-5 w-2 right-button" 
+          class="m-2 w-2 right-button" 
           severity="danger" 
           size="small" 
           icon="pi pi-trash" 
@@ -362,7 +355,11 @@ export default {
             'title': webDoc.title, 
             'id': webDoc.id
           }
-        );
+        ).bindTooltip(webDoc.title, {
+          permanent: true, 
+          direction: 'top', 
+          offset: L.point(-14,-5)
+        });
         m.on('click', (e) => {
           const id = e.sourceTarget.options.id
           this.$emit('webDocumentClickedInMap', id);
@@ -454,7 +451,7 @@ export default {
       this.map.on(L.Draw.Event.CREATED, e => {
 
         e.layer.setStyle({
-          color: 'green', 
+          color: 'yellow', 
         });
         
         // handle different shapes (rectangle, polygon)
