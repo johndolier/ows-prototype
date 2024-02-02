@@ -1,5 +1,18 @@
 
 <template>
+<div>
+  <!-- <OverlayPanel ref="op">
+    <span
+      v-for="location in content.locations" :key="location.name"
+      class="p-1 float-left" >
+      <PButton 
+        class="tag-button"
+        :label="location.name"
+        severity="info"
+        @click="locationClicked(location)"
+      />
+    </span>
+  </OverlayPanel> -->
   <Card>
     <template #title>
       <PButton id="titleElement"
@@ -19,15 +32,21 @@
       </PButton>
     </template>
     <template #content>
-      <!-- <div>
-        <span class="w-full">
-          <Tag 
-            class="mx-2" 
-            value="Web Document" 
-            severity="warning"
-          />
-        </span>
-      </div> -->
+      <div v-if="hasGeodata">
+        <PButton 
+          class="float-right m-2"
+          label="Show On Map"
+          icon="pi pi-map"
+          severity="success"
+          @click="showGeodata"
+        />
+        <PButton 
+          class="float-right m-2"
+          :label="location.name"
+          icon="pi pi-compass"
+          severity=""
+        />
+      </div>
       <p ref="contentRef"
         v-if="content.is_html" 
         :class="showMore ? 'more-text' : 'less-text'"
@@ -44,7 +63,8 @@
         @click="showMoreClicked"
       />
     </template>
-  </Card>     
+  </Card>
+</div>
 </template>
 
 <script>
@@ -55,6 +75,10 @@ import Card from 'primevue/card';
 export default {
 
   name: "WebDocumentComponent", 
+
+  emits: [
+    "showGeodata"
+  ], 
   
   components: {
     Card, 
@@ -71,6 +95,22 @@ export default {
     }
   }, 
 
+  computed: {
+    hasGeodata() {
+      // console.log(this.content.locations);
+      if (this.content.locations.length > 0) {
+        return true;
+      }
+      return false;
+    }, 
+    location() {
+      if (this.hasGeodata) {
+        return this.content.locations[0];
+      }
+      return null;
+    }
+  }, 
+
   methods: {
     openLink(link) {
       try {
@@ -82,7 +122,15 @@ export default {
     }, 
     showMoreClicked() {
       this.showMore = !this.showMore;
-    }
+    }, 
+    showGeodata() {
+      this.$emit('showGeodata', this.location);
+    }, 
+    showLocations(event) {
+      // disabled
+      // this.$refs.op.toggle(event);
+      console.log(event);
+    }, 
   }, 
 
   mounted() {
@@ -90,6 +138,7 @@ export default {
     if (this.$refs.contentRef && this.$refs.contentRef.scrollHeight > (this.$refs.contentRef.clientHeight + 5)) {
       this.contentOverflown = true;
     }
+    // console.log(this.content);
   }
 }
 

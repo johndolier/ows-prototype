@@ -6,6 +6,7 @@ import planetary_computer
 from pyArango.connection import DBHandle
 # from sentence_transformers import SentenceTransformer
 import nbformat as nbf
+import uuid
 
 
 from utils import normalize_scoring_range
@@ -14,6 +15,10 @@ from queries.arango_queries import *
 
 CHATNOIR_ENDPOINT = 'https://chatnoir.web.webis.de/api/v1/_search'
 PROTOTYPE_WEBINDEX_ENDPOINT = 'https://qnode.eu/ows/prosa/service/'
+MOSAIC_ENDPOINT = 'https://qnode.eu/ows/mosaic/service/'
+
+DEMO_INDEX_MOSAIC = "dlrprototype"
+DEMO_INDEX_STANDARD = "demo-dlrsciencesearch"
 
 PC_API = "https://planetarycomputer.microsoft.com/api/stac/v1"
 TERRABYTE_API = "https://stac.terrabyte.lrz.de/public/api"
@@ -35,6 +40,9 @@ class DataRetriever:
             # prototype webindex
             print("DataRetriever - using prototype web index")
             self.index_source = "prototype_webindex"
+        elif web_api == 3:
+            print("DataRetriever - using Mosaic open web index")
+            self.index_source = "mosaic"
         else:
             # default
             print("Error - invalid web api source!")
@@ -45,14 +53,17 @@ class DataRetriever:
         self.stac_source_dict = self.__fetch_stac_source_information()
 
 
-    def make_web_query(self, query:str, limit:int, verbose:bool=False):
+    def make_web_query(self, query:str, limit:int, location_filter:dict, verbose:bool=False):
         '''
             Makes web query on selected source (chatnoir or prototype webindex application -> OWS)
+            Mosaic request also takes location filter
         '''
         if self.index_source == "chatnoir":
             results = self.__make_web_query_chatnoir(query=query, limit=limit, verbose=verbose)
         elif self.index_source == "prototype_webindex":
             results = self.__make_web_query_prototype_webindex(query=query, limit=limit, verbose=verbose)
+        elif self.index_source == "mosaic":
+            results = self.__make_web_query_mosaic_webindex(query=query, limit=limit, location_filter=location_filter, verbose=verbose)
         else:
             print(f"error - invalid state! did not find web index source for {self.index_source}")
             results = None
@@ -138,10 +149,10 @@ class DataRetriever:
         # TODO automatically get connected eo missions/instruments
 
         # alternatively, we can use the keywords to form a query (location and time is evicted from this query)
-        # query = ''
-        # for word in keywords:
-        #     query += f"{word} "
-        # query = query.strip()
+        query = ''
+        for word in keywords:
+            query += f"{word} "
+        query = query.strip()
         
 
         # model = SentenceTransformer('msmarco-distilbert-base-v4')
@@ -165,12 +176,37 @@ class DataRetriever:
 
     def get_all_keywords(self, batchSize:int = 1000):
         try:
-            result = self.db.AQLQuery(ALL_KEWORDS_QUERY, batchSize=batchSize, rawResults=True)
-            result = [key['_key'] for key in result] # transform query object to list of keywords
+            result = self.db.AQLQuery(ALL_KEYWORDS_QUERY, batchSize=batchSize, rawResults=True)
+            keyword_list = []
+            for node in result:
+                keyword_list.append({
+                    'id': node['_id'], 
+                    'name': node['keyword_full']
+                })
         except Exception as e:
             print(e)
-            result = []
-        return result
+            keyword_list = []
+        return keyword_list
+    
+    def get_all_authors(self, batchSize:int = 1000):
+        try:
+            result = self.db.AQLQuery(ALL_AUTHORS_QUERY, batchSize=batchSize, rawResults=True)
+            author_list = []
+            for node in result:
+                first_name = node['first_name']
+                last_name = node['last_name']
+                name = f"{first_name} {last_name}"
+                author_list.append({
+                    'id': node['_id'], 
+                    'first_name': first_name, 
+                    'last_name': last_name, 
+                    'name': name
+                })
+        except Exception as e:
+            print(e)
+            author_list = []
+        return author_list
+    
     
     def make_publications_query(self, query:str, keywords:list[str] = None, limit:int = 500) -> list[dict]:
         '''
@@ -225,22 +261,30 @@ class DataRetriever:
                 continue
         
         return filtered_tweets[:limit]
-        
-    def make_graph_keyword_query(self, keywords:list[str]):
-        ''' Makes graph query for publications and stac collections that are connected to the given keywords
+    
+    def make_graph_query(self, keywords_list, authors_list):
+        ''' Makes graph query for publications and stac collections that are connected to the given keywords and authors (in case with publications)
             additionally makes normal web query with keyword list to get web documents (currently disabled)
         '''
-        query_params = {'keyword_list': keywords}
+        
+        authors = [element['id'] for element in authors_list]
+        keywords = [element['id'] for element in keywords_list]
+        
+        stac_query_params = {'keyword_list': keywords}
         try:
-            results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=query_params, rawResults=True)
+            results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=stac_query_params, rawResults=True)
             results = [e for e in results]
             stac_collections = self.__transform_raw_stac_collection_results(results)
         except Exception as e:
             print(e)
             stac_collections = []
         
+        pub_query_params = {
+            'author_list': authors, 
+            'keyword_list': keywords
+        }
         try:
-            results = self.db.AQLQuery(GRAPH_KEYWORD_PUB_QUERY, bindVars=query_params, rawResults=True)
+            results = self.db.AQLQuery(GRAPH_KEYWORD_PUB_QUERY, bindVars=pub_query_params, rawResults=True)
             publications = self.__transform_raw_publication_results(results)
         except Exception as e:
             print(e)
@@ -293,15 +337,17 @@ class DataRetriever:
             url = result.get('target_uri', '')
             text = result.get('snippet', '')
             transformed_results.append({
+                'id': uuid.uuid4(), 
                 'title': title, 
                 'url': url, 
                 'text': text, 
                 'is_html': True,
+                'locations': [], 
             })
         return transformed_results
 
     def __make_web_query_prototype_webindex(self, query:str, limit:int = 100, verbose:bool = False) -> list[dict]:
-        request_url = f"{PROTOTYPE_WEBINDEX_ENDPOINT}search?q={query}&index=demo-dlrsciencesearch&limit={limit}"
+        request_url = f"{PROTOTYPE_WEBINDEX_ENDPOINT}search?q={query}&index={DEMO_INDEX_STANDARD}&limit={limit}"
         if verbose:
             print(f"making request on url: {request_url}")
         
@@ -322,14 +368,80 @@ class DataRetriever:
             url = result.get('url', '')
             text = result.get('textSnippet', '')
             transformed_results.append({
+                'id': uuid.uuid4(), 
                 'title': title, 
                 'url': url, 
                 'text': text, 
                 'is_html': False,
+                'locations': [], 
             })
         return transformed_results
 
-  # STAC QUERY HELPER FUNCTIONS
+    def __make_web_query_mosaic_webindex(self, query:str, limit:int = 1000, location_filter:dict={}, verbose:bool = False) -> list[dict]:
+        bbox = self.__get_bbox_from_location_filters(location_filter=location_filter)
+        if bbox:
+            # bbox is S,W,N,E
+            request_url = f"{MOSAIC_ENDPOINT}search?q={query}&index={DEMO_INDEX_MOSAIC}&limit={limit}&east={bbox[3]}&west={bbox[1]}&north={bbox[2]}&south={bbox[0]}"
+        else:
+            request_url = f"{MOSAIC_ENDPOINT}search?q={query}&index={DEMO_INDEX_MOSAIC}&limit={limit}"
+        if verbose:
+            print(f"making request on url: {request_url}")
+        response = requests.get(request_url)
+        try:
+            response_dict = json.loads(response.text)
+        except Exception as e:
+            print(f"Exception in parsing response - {e}")
+            print(f"Status code: {response.status_code}")
+            response_dict = {}
+
+        results = response_dict.get('results', [])
+        if not results:
+            return []
+
+        results = results[0]['dlrprototype']
+        
+        # transform results to fit standardized interface
+        transformed_results = []
+        for result in results:
+            title = result.get('title', '')
+            url = result.get('url', '')
+            text = result.get('textSnippet', '')
+            locations = result.get('locations', [])
+            locations = self.__transform_locations_from_web_query(locations)
+            transformed_results.append({
+                'id': uuid.uuid4(), 
+                'title': title, 
+                'url': url, 
+                'text': text, 
+                'is_html': False,
+                'locations': locations, 
+            })
+        return transformed_results
+    
+    def __transform_locations_from_web_query(self, raw_locations_list):
+        locations = []
+        # for now, only the first location is parsed, rest is discarded
+        for location in raw_locations_list:
+            loc_name = location.get('locationName')
+            loc_entries = location.get('locationEntries', [])
+            points = []
+            if len(loc_entries) > 1:
+                print(loc_entries)
+            for entry in loc_entries:
+                lat = entry['latitude']
+                long = entry['longitude']
+                # TODO fetch other info (e.g. country code)
+                points.append((long, lat))
+            multipoint_geojson = geojson.MultiPoint(points)
+            location = {
+                'name': loc_name, 
+                'geojson': multipoint_geojson
+            }
+            locations.append(location)
+            break
+        return locations
+
+# STAC QUERY HELPER FUNCTIONS
     def __get_catalog(self, catalog_url:str):
         if "planetarycomputer" in catalog_url:
             catalog = pystac_client.Client.open(catalog_url, modifier=planetary_computer.sign_inplace)
@@ -337,6 +449,17 @@ class DataRetriever:
             catalog = pystac_client.Client.open(catalog_url)
         return catalog
 
+    def __get_bbox_from_location_filters(self, location_filter:dict):
+        if not isinstance(location_filter, dict) or not location_filter:
+            # location filter is empty or not a dictionary!
+            return None
+        
+        if location_filter['type'] == 'bbox':
+            return location_filter['coords']
+        else:
+            # TODO handle different shapes
+            return None
+        
     def __get_geojson_from_location_filters(self, location_filter:dict):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO handle multiple different shapes
@@ -435,8 +558,8 @@ time_range = [time_start, time_end]
             stac = doc.get('stac')
             if not stac:
                 continue
-            score = doc.get('score', 10)
-            stac['score'] = score
+            stac['score'] = doc.get('score', 10)
+            stac['keywords'] = doc.get('keywords', [])
             stac_source = doc.get('stac_source', [])
             if len(stac_source) == 1:
                 stac_source = stac_source[0]
@@ -459,12 +582,14 @@ time_range = [time_start, time_end]
             pub = doc.get('pub')
             if not pub:
                 continue
-            score = doc.get('score', 0)
-            pub['score'] = score
+            pub['score'] = doc.get('score', 0)
+            pub['authors'] = doc.get('authors', [])
+            pub['keywords'] = doc.get('keywords', [])
             eo_objects = doc.get('eo_objects', [])
             eo_missions, eo_instruments = self.__get_transformed_eo_objects(eo_objects)
             pub['eo_missions'] = eo_missions
             pub['eo_instruments'] = eo_instruments
+
             transformed_results.append(pub)
         return transformed_results
     

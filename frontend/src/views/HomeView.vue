@@ -82,46 +82,6 @@
         />
       </div>
     </PDialog>
-    <!-- Siebar component for advanced query and filtering documents -->
-    <!-- <PSidebar 
-      v-model:visible="showAdvancedSearch" 
-      position="left" 
-      :modal="false"
-    >
-      <h2>
-        Advanced Search
-      </h2>
-      <div class="advanced-search-element">
-        <p 
-          align="left" 
-          class="advanced-search-header"
-        >
-          Time Filter
-        </p>
-        <VueDatePicker 
-          v-model="timeRangeFilter" 
-          range 
-          :partial-range="false" 
-          class="advanced-search-body"
-        />
-        <PButton 
-          v-if="timeSelected"
-          class="my-2 center-button"
-          severity="danger"
-          icon="pi pi-ban"
-          label="Clear Time Selection"
-          @click="clearTimeSelection" 
-        />
-      </div>
-      <PButton 
-        v-if="!showStartScreen" 
-        class="my-2" 
-        severity="info" 
-        label="SHOW GEOTWEETS (DEBUG)"
-        @click="requestGeotweets" 
-      />
-    </PSidebar> -->
-
     <div v-if="showStartScreen">
       <div 
         id="appHeader" 
@@ -152,16 +112,18 @@
         :show-advanced-search-button="true"
         :homeViewQuery="homeViewQuery"
         :keywords="keywords"
+        :authors="authors"
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
-        @graph-keyword-query="submitGraphKeywordQuery"
+        @graph-query="submitGraphQuery"
+        @apply-filter="filterDocuments"
       />
       <div :id="showAdvancedSearch ? 'documentBodyExtended' : 'documentBody'" 
         class=" surface-ground flex">
         <div class="left-column">
           <DocumentListComponent
             id="documentListComponent"
-            :documents="documents" 
+            :documents="filteredDocuments" 
             :stacItems="stacItems" 
             initial-document-type="Web Documents"
             :show-top-results-only="false"
@@ -172,6 +134,8 @@
             @showSTACItemsOnMap="showSTACItemsOnMap"
             @showSpatialExtent="showSpatialExtent"
             @keyword-clicked="keywordClicked"
+            @show-geodata="showGeodata"
+            @author-clicked="authorClicked"  
           />
         </div>
         <div class="right-column">
@@ -187,6 +151,7 @@
             @stacItemClicked="stacItemClicked"
             @fixMapClicked="fixMapClicked" 
             @clearSTACLayers="clearSTACLayers"
+            @web-document-clicked-in-map="webDocumentClickedInMap"
           />
           <div v-if="showTopSTACResults">
             <DocumentListComponent
@@ -246,9 +211,11 @@ export default {
         'stac_collections': [], 
         'web_documents': [],
       }, 
+      filteredDocuments: null, 
       // stacItems contain all the fetched STAC items frmo this user session
       stacItems: {}, 
       keywords: [], 
+      authors: [], 
 
       // last user query (used to be shown in DocumentList elements)
       lastUserQuery: null,
@@ -284,13 +251,19 @@ export default {
   }, 
 
   async created() {
-    const response = await axios.get('/keywordRequest');
-    if (response.status != 200) {
+    const keywordResponse = await axios.get('/keywordRequest');
+    if (keywordResponse.status != 200) {
       console.log("error - could not fetch keywords from database");
       return;
     }
-    this.keywords = response.data;
-    //console.log("keywords fetched");
+    this.keywords = keywordResponse.data;
+    
+    const authorResponse = await axios.get('/authorRequest');
+    if (authorResponse.status != 200) {
+      console.log("error - could not fetch authors from database");
+      return;
+    }
+    this.authors = authorResponse.data;
   }, 
 
   computed: {
@@ -302,8 +275,7 @@ export default {
     }, 
     documents() {
       // placeholder function
-      const documents = this.rawDocuments;
-      return documents;
+      return this.filteredDocuments;
     }, 
     timeFilter() {
       // return time filter as list of two timestamps
@@ -359,9 +331,9 @@ export default {
       this.stacItems[stacCollectionID]['requests'][requestUID].highlightID = stacItemID;
     },
     showSTACItemsOnMap(stacCollectionID, requestUID) {
-      console.log("show stac items on map");
-      console.log(stacCollectionID);
-      console.log(requestUID);
+      // console.log("show stac items on map");
+      // console.log(stacCollectionID);
+      // console.log(requestUID);
       this.focusOnMap();
       if (this.$refs.mapRef !== undefined) {
         this.$refs.mapRef.focusMapOnSTACLayer(stacCollectionID, requestUID);
@@ -373,10 +345,161 @@ export default {
         this.$refs.mapRef.showSpatialExtent(bboxList);
       }
     }, 
+    showGeodata(location) {
+      // show geodata from web items on map
+      this.showWebDocumentsOnMap();
+      this.focusOnMap();
+      if (this.$refs.mapRef) {
+        this.$refs.mapRef.showGeodata(location);
+      }
+    }, 
+    webDocumentClickedInMap(webDocId) {
+      for (const webDoc of this.documents.web_documents) {
+        if (webDoc.id == webDocId) {
+          window.open(webDoc.url);
+          return;
+        }
+      }
+      console.log("error - did not find web document for " + webDocId);
+    }, 
+
+    showWebDocumentsOnMap() {
+      if (this.$refs.mapRef) {
+        this.$refs.mapRef.createWebDocumentLayer();
+      }
+    }, 
 
     // UI STATE METHODS
+    copyRawDocuments() {
+      // deep copy of rawDocuments
+      let documents = {
+        'publications': [],  
+        'stac_collections': [], 
+        'web_documents': [],
+      };
+      for (const pub of this.rawDocuments.publications) {
+        documents.publications.push(pub);
+      }
+      for (const stacColl of this.rawDocuments.stac_collections) {
+        documents.stac_collections.push(stacColl);
+      }
+      for (const webDoc of this.rawDocuments.web_documents) {
+        documents.web_documents.push(webDoc);
+      }
+
+      return documents;
+
+    },
+    
+    // graph / filter helper methods
+    resetFilters() {
+      if (this.$refs.searchHeaderRef) {
+        this.$refs.searchHeaderRef.selectedKeywords = [];
+        this.$refs.searchHeaderRef.selectedAuthors = []; 
+      }
+      else {
+        console.log("warning - cannot reset filters because search header ref does not exist");
+      }
+    }, 
+
+    filterDocuments(selectedKeywords, selectedAuthors) {
+      // whenever this method is run, the documents get updated based on the current filters that are applied
+      if (!this.$refs.searchHeaderRef) {
+        this.filteredDocuments = this.copyRawDocuments();
+        return;
+      }
+      // check which filtering should be applied
+      let filterKeywordsFlag = false;
+      let filterAuthorsFlag = false;
+      let filterPublicationsFlag = false;
+      let filterSTACCollectionsFlag = false;
+
+      // only apply filters if there is at least one keyword / author present in the selected array
+      if (selectedKeywords.length > 0) {
+        // keywords for filtering are present
+        filterKeywordsFlag = true;
+        filterPublicationsFlag = true;
+        filterSTACCollectionsFlag = true;
+        
+        selectedKeywords = selectedKeywords.map(function(keyword) {
+          return keyword.id;
+        });
+
+      }
+      if (selectedAuthors.length > 0) {
+        // authors for filtering are present
+        filterAuthorsFlag = true;
+        filterPublicationsFlag = true;
+        selectedAuthors = selectedAuthors.map(function(author) {
+          return author.id;
+        });
+      }
+
+      if (!filterKeywordsFlag && !filterAuthorsFlag) {
+        this.filteredDocuments = this.copyRawDocuments();
+        return;
+      }
+
+      // do the filtering on the document lists
+      let documents = this.copyRawDocuments();
+      let includeDocument = true;
+      if (filterPublicationsFlag) {
+        let filteredPublications = []; 
+        
+        for (const pub of documents.publications) {
+          includeDocument = true;
+          if (filterKeywordsFlag) {
+            includeDocument = false;
+            for (const keywordNode of pub.keywords) {
+              if (selectedKeywords.includes(keywordNode.keyword._id)) {
+                includeDocument = true;
+                break;
+              }
+            }
+          }
+          if (!includeDocument) {
+            // publication does not qualify -> continue
+            continue;
+          }
+
+          if (filterAuthorsFlag) {
+            includeDocument = false;
+            for (const authorNode of pub.authors) {
+              if (selectedAuthors.includes(authorNode.author._id)) {
+                includeDocument = true;
+                break;
+              }
+            }
+          }
+          if (includeDocument) {
+            filteredPublications.push(pub);
+          }
+        }
+        documents.publications = filteredPublications;
+      }
+
+      if (filterSTACCollectionsFlag) {
+        let filteredSTACCollections = []; 
+        for (const stacColl of documents.stac_collections) {
+          includeDocument = false;
+          for (const keywordNode of stacColl.keywords) {
+            if (selectedKeywords.includes(keywordNode.keyword._id)) {
+              includeDocument = true;
+              break;
+            }
+          }
+          if (includeDocument) {
+            filteredSTACCollections.push(stacColl);
+          }
+        }
+        documents.stac_collections = filteredSTACCollections
+      }
+      this.filteredDocuments = documents;
+
+    }, 
     refreshUIAfterQuery() {
       // hide map and show top results (should be called after a new query was fetched)
+      this.fixMap = false;
       this.showMap = false;
       this.showTopPublicationResults = true;
       this.showTopSTACResults = true;
@@ -393,6 +516,9 @@ export default {
       this.showMap = !this.showMap;
       if (!this.showMap) {
         this.fixMap = false;
+      }
+      if (this.showMap) {
+        this.$refs.mapRef.createWebDocumentLayer();
       }
     }, 
     clearTimeSelection() {
@@ -428,23 +554,36 @@ export default {
       }
       this.showAdvancedSearch = true;
     },
+    authorClicked(author) {
+      if (this.$refs.searchHeaderRef && !this.$refs.searchHeaderRef.selectedAuthors.includes(author)) {
+        this.$refs.searchHeaderRef.selectedAuthors.push(author);
+      }
+      this.showAdvancedSearch = true;
+    }, 
 
-    async submitGraphKeywordQuery(keywords) {
+    async submitGraphQuery(keywords, authors) {
       // graph key
       const request = {
         'keywords': keywords, 
+        'authors': authors, 
       }
-      const response = await axios.post('/graphKeywordRequest', request);
+      const response = await axios.post('/graphQueryRequest', request);
       if (response.status  != 200) {
-        console.log("error - could not fetch graph keyword query");
+        console.log("error - could not fetch graph query");
         return;
       }
       // parse response
       this.rawDocuments['stac_collections'] = response.data.stac_collections;
       this.rawDocuments['publications'] = response.data.publications;
-      // console.log(this.rawDocuments.stac_collections.length);
-      // console.log(this.rawDocuments.publications.length);
-      // this.rawDocuments['web_documents'] = response.data.web_documents;
+
+      // TODO set last user query to graph search
+      this.lastUserQuery = "Graph Search";
+
+      // reset filters after graph query
+      this.resetFilters();
+      this.filterDocuments([], []);
+
+      // TODO what happens with web data ?
     }, 
   
     // BACKEND QUERY HELPER METHODS
@@ -458,7 +597,6 @@ export default {
     }, 
     // BACKEND QUERY METHODS
     async submitQuery(userQuery) {
-      //console.log("starting to submit query");
       if (userQuery == null) {
         //console.log("no user query provided");
         this.$toast.add({
@@ -486,18 +624,23 @@ export default {
           const geoBounds = locationTuple[1];
           geoBoundsList.push(geoBounds);
         }
+        if (geoBoundsList.length > 0) {
+          console.log("Query Analyzer found location in query -> focus map on locations");
+        }
         this.focusMapOnLocations(geoBoundsList);
         this.addTimeParsingFilters(analyzerQueryResult.data.dates);
         keywords = analyzerQueryResult.data.general_keywords;
       }
 
       // after setting analyzer results from Query Analyzer, continue with normal document query
+      this.locationFilter = this.getLocationFilter();
       await this.makeDocumentQueryRequest(userQuery, keywords);
       this.lastUserQuery = userQuery;
       this.homeViewQuery = userQuery;
       // let "topResults" appear and hide map
       this.refreshUIAfterQuery();
     }, 
+
     async makeDocumentQueryRequest(userQuery, keywords) {
       const promises = []; 
       if (this.selectPublications) {
@@ -524,7 +667,7 @@ export default {
             continue;
           }
           const key = singleResponse.data[0];
-          console.log("database request for " + key + " was successful!");
+          // console.log("database request for " + key + " was successful!");
           if (key in this.rawDocuments) {
             this.rawDocuments[key] = singleResponse.data[1];
           }
@@ -536,7 +679,12 @@ export default {
         if (this.showStartScreen) {
           this.showStartScreen = false;
         }
-        // this.showMapAndList();        
+        // make web documents visible in map
+        this.showWebDocumentsOnMap();
+
+        // reset filters
+        this.resetFilters();
+        this.filterDocuments([], []);
       }
     }, 
     async continueStacItemQuery(stacCollectionID) {
@@ -647,7 +795,9 @@ export default {
       const request = {
         'query': userQuery, 
         'limit': 10, 
+        'location_filter': this.locationFilter
       };
+      // console.log(request);
       return axios.post(path, request);
     }, 
     async requestSTACCollections(userQuery, keywords) {
@@ -721,7 +871,7 @@ export default {
 }
 
 #documentBodyExtended {
-    margin-top: 170px;
+    margin-top: 245px;
 }
 
 #appHeader {

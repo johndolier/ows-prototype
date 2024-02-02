@@ -108,7 +108,7 @@ def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[d
 
 @app.post("/webRequest")
 def web_request(request: WebRequest) -> tuple[str, list[dict]]:
-    results = data_retriever.make_web_query(query=request.query, limit=request.limit, verbose=True)
+    results = data_retriever.make_web_query(query=request.query, limit=request.limit, location_filter=request.location_filter, verbose=True)
     return ('web_documents', results)
 
 @app.get("/keywordRequest")
@@ -116,9 +116,14 @@ def get_all_keywords_request():
     keywords = data_retriever.get_all_keywords()
     return keywords
 
-@app.post("/graphKeywordRequest")
-def graph_keyword_request(request: GraphKeywordRequest):
-    results = data_retriever.make_graph_keyword_query(keywords=request.keywords)
+@app.get("/authorRequest")
+def get_all_authors_request():
+    authors = data_retriever.get_all_authors()
+    return authors
+
+@app.post("/graphQueryRequest")
+def graph_query_request(request: GraphQueryRequest):
+    results = data_retriever.make_graph_query(keywords_list=request.keywords, authors_list=request.authors)
     return results
 
 @app.post("/queryAnalyzerRequest")

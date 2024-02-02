@@ -11,6 +11,7 @@ class STACCollectionRequest(BaseModel):
 class WebRequest(BaseModel):
     query: str
     limit: PositiveInt
+    location_filter: object | None = None
 
 class PubRequest(BaseModel):
     query: str
@@ -39,5 +40,7 @@ class GeotweetRequest(BaseModel):
     limit: PositiveInt
 
 
-class GraphKeywordRequest(BaseModel):
-    keywords: list[str]
+class GraphQueryRequest(BaseModel):
+    keywords: list[dict]
+    authors: list[dict]
+

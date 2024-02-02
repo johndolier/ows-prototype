@@ -89,10 +89,10 @@
             severity="warning"
           />
           <span 
-            v-for="keyword in content.keywords" :key="keyword" 
+            v-for="keyword in keywords" :key="keyword.id" 
             class="p-1"
             >
-            <PButton :label="keyword" 
+            <PButton :label="keyword.name" 
               class="tag-button"
               @click="keywordClicked(keyword)"
             />
@@ -115,6 +115,20 @@
               :label="eoInstrument.short_name" 
               severity="success" 
               @click="eoInstrumentDetailClicked(eoInstrument)"
+            />
+          </span>
+        </div>
+        <div v-if="authors"
+          class="my-1"
+        >
+          <span id="authors"
+            v-for="author in authors" :key="author.id" 
+            class="p-1" >
+            <PButton 
+              class="tag-button"
+              :label="author.name" 
+              severity="success" 
+              @click="authorClicked(author)"
             />
           </span>
         </div>
@@ -155,7 +169,10 @@ export default {
     normalStyle: Boolean, // this flag controls styling (can either be "normal" (true) or "small" style (false))
   }, 
 
-  emits: ['keywordClicked'],
+  emits: [
+    'keywordClicked',
+    'authorClicked', 
+  ],
   
   data() {
     return {
@@ -177,6 +194,26 @@ export default {
       // returns a list of EO instruments that are present in the STAC collection
       return this.content.eo_instruments;
     }, 
+    authors() {
+      let authors = [];
+      for (const authorNode of this.content.authors) {
+        authors.push({
+          'id': authorNode.author._id, 
+          'name': authorNode.author.first_name + " " + authorNode.author.last_name
+        })
+      }
+      return authors;
+    }, 
+    keywords() {
+      let keywords = [];
+      for (const keywordNode of this.content.keywords) {
+        keywords.push({
+          'id': keywordNode.keyword._id, 
+          'name': keywordNode.keyword.keyword_full, 
+        })
+      }
+      return keywords;
+    }, 
   }, 
 
   methods: {
@@ -197,6 +234,9 @@ export default {
       this.eoInstrumentDetail = eoInstrument;
       this.showEOInstrumentDetail = true;
     },
+    authorClicked(author) {
+      this.$emit('authorClicked', author);
+    }, 
     openMissionSite(missionSite) {
       // open mission site in new tab
       window.open(missionSite);

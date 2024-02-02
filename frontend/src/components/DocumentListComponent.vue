@@ -45,12 +45,14 @@
                   :content="slotProps.data[1]" 
                   :normal-style="!isTopResultsList"
                   @keyword-clicked="keywordClicked"
+                  @author-clicked="authorClicked"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'web_document'">
                 <WebDocumentComponent 
                   class="element-card" 
                   :content="slotProps.data[1]" 
+                  @show-geodata="showGeodata"
                 />
               </div>
               <div v-else-if="slotProps.data[0] == 'stac_collection'">
@@ -117,6 +119,8 @@ export default {
     'showSTACItemsOnMap', 
     'showSpatialExtent', 
     'keywordClicked', 
+    'showGeodata', 
+    'authorClicked', 
   ], 
 
   data () {
@@ -200,6 +204,12 @@ export default {
     }, 
     keywordClicked(keyword) {
       this.$emit('keywordClicked', keyword);
+    }, 
+    showGeodata(location) {
+      this.$emit('showGeodata', location);
+    }, 
+    authorClicked(author) {
+      this.$emit('authorClicked', author);
     }, 
   }, 
   watch: {

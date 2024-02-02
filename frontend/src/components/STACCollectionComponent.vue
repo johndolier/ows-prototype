@@ -145,9 +145,9 @@
           </div>
           <div>
             <span 
-              v-for="keyword in content.keywords" :key="keyword" 
+              v-for="keyword in keywords" :key="keyword.id" 
               class="p-1">
-              <PButton :label="keyword"
+              <PButton :label="keyword.name"
                 class="tag-button"
                 @click="keywordClicked(keyword)"
               />
@@ -316,6 +316,16 @@ export default {
     eoInstruments() {
       // returns a list of EO instruments that are present in the STAC collection
       return this.content.eo_instruments;
+    }, 
+    keywords() {
+      let keywords = [];
+      for (const keywordNode of this.content.keywords) {
+        keywords.push({
+          'id': keywordNode.keyword._id, 
+          'name': keywordNode.keyword.keyword_full, 
+        })
+      }
+      return keywords;
     }, 
     stacItems() {
       // stacItems is a dictionary of STAC item requests performed on this STAC collection

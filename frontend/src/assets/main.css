@@ -18,7 +18,7 @@ html,body {
 
 .p-button-sm {
     font-size: 0.5rem !important;
-    padding: 0.5rem 0.5rem;
+    /* padding: 0.5rem 0.5rem; */
 }
 
 .p-button {
@@ -64,6 +64,10 @@ html,body {
     float:left;
     margin-left:2px;
   }
+
+.float-right {
+    float:right;
+}
 
 .element-card {
     width: 100%;
