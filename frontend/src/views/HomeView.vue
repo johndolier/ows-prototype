@@ -624,6 +624,9 @@ export default {
           const geoBounds = locationTuple[1];
           geoBoundsList.push(geoBounds);
         }
+        if (geoBoundsList.length > 0) {
+          console.log("Query Analyzer found location in query -> focus map on locations");
+        }
         this.focusMapOnLocations(geoBoundsList);
         this.addTimeParsingFilters(analyzerQueryResult.data.dates);
         keywords = analyzerQueryResult.data.general_keywords;
@@ -664,7 +667,7 @@ export default {
             continue;
           }
           const key = singleResponse.data[0];
-          console.log("database request for " + key + " was successful!");
+          // console.log("database request for " + key + " was successful!");
           if (key in this.rawDocuments) {
             this.rawDocuments[key] = singleResponse.data[1];
           }

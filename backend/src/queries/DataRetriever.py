@@ -149,10 +149,10 @@ class DataRetriever:
         # TODO automatically get connected eo missions/instruments
 
         # alternatively, we can use the keywords to form a query (location and time is evicted from this query)
-        # query = ''
-        # for word in keywords:
-        #     query += f"{word} "
-        # query = query.strip()
+        query = ''
+        for word in keywords:
+            query += f"{word} "
+        query = query.strip()
         
 
         model = SentenceTransformer('msmarco-distilbert-base-v4')
