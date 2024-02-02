@@ -499,6 +499,7 @@ export default {
     }, 
     refreshUIAfterQuery() {
       // hide map and show top results (should be called after a new query was fetched)
+      this.fixMap = false;
       this.showMap = false;
       this.showTopPublicationResults = true;
       this.showTopSTACResults = true;
@@ -677,7 +678,7 @@ export default {
         }
         // make web documents visible in map
         this.showWebDocumentsOnMap();
-        
+
         // reset filters
         this.resetFilters();
         this.filterDocuments([], []);
@@ -793,7 +794,7 @@ export default {
         'limit': 10, 
         'location_filter': this.locationFilter
       };
-      console.log(request);
+      // console.log(request);
       return axios.post(path, request);
     }, 
     async requestSTACCollections(userQuery, keywords) {
