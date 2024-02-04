@@ -113,6 +113,7 @@
         :homeViewQuery="homeViewQuery"
         :keywords="keywords"
         :authors="authors"
+        :eo-nodes="eoNodes"
         @submitQuery="this.submitQuery" 
         @advancedSearchClick="this.advancedSearchClick"
         @graph-query="submitGraphQuery"
@@ -216,6 +217,7 @@ export default {
       stacItems: {}, 
       keywords: [], 
       authors: [], 
+      eoNodes: [], 
 
       // last user query (used to be shown in DocumentList elements)
       lastUserQuery: null,
@@ -251,6 +253,8 @@ export default {
   }, 
 
   async created() {
+    // at startup, fetch all keywords, authors and EO objects from database for graph search component
+
     const keywordResponse = await axios.get('/keywordRequest');
     if (keywordResponse.status != 200) {
       console.log("error - could not fetch keywords from database");
@@ -264,6 +268,13 @@ export default {
       return;
     }
     this.authors = authorResponse.data;
+
+    const eoNodeResponse = await axios.get('/eoNodeRequest');
+    if (eoNodeResponse.status != 200) {
+      console.log("error - could not fetch eo nodes from database");
+      return;
+    }
+    this.eoNodes = eoNodeResponse.data;
   }, 
 
   computed: {
@@ -396,106 +407,165 @@ export default {
       if (this.$refs.searchHeaderRef) {
         this.$refs.searchHeaderRef.selectedKeywords = [];
         this.$refs.searchHeaderRef.selectedAuthors = []; 
+        this.$refs.searchHeaderRef.selectedEONodes = [];
       }
       else {
         console.log("warning - cannot reset filters because search header ref does not exist");
       }
     }, 
 
-    filterDocuments(selectedKeywords, selectedAuthors) {
-      // whenever this method is run, the documents get updated based on the current filters that are applied
-      if (!this.$refs.searchHeaderRef) {
-        this.filteredDocuments = this.copyRawDocuments();
-        return;
-      }
-      // check which filtering should be applied
-      let filterKeywordsFlag = false;
-      let filterAuthorsFlag = false;
-      let filterPublicationsFlag = false;
-      let filterSTACCollectionsFlag = false;
-
-      // only apply filters if there is at least one keyword / author present in the selected array
-      if (selectedKeywords.length > 0) {
-        // keywords for filtering are present
-        filterKeywordsFlag = true;
-        filterPublicationsFlag = true;
-        filterSTACCollectionsFlag = true;
-        
-        selectedKeywords = selectedKeywords.map(function(keyword) {
-          return keyword.id;
-        });
-
-      }
-      if (selectedAuthors.length > 0) {
-        // authors for filtering are present
-        filterAuthorsFlag = true;
-        filterPublicationsFlag = true;
-        selectedAuthors = selectedAuthors.map(function(author) {
-          return author.id;
-        });
-      }
-
-      if (!filterKeywordsFlag && !filterAuthorsFlag) {
-        this.filteredDocuments = this.copyRawDocuments();
-        return;
-      }
-
-      // do the filtering on the document lists
-      let documents = this.copyRawDocuments();
-      let includeDocument = true;
-      if (filterPublicationsFlag) {
-        let filteredPublications = []; 
-        
-        for (const pub of documents.publications) {
-          includeDocument = true;
-          if (filterKeywordsFlag) {
-            includeDocument = false;
-            for (const keywordNode of pub.keywords) {
-              if (selectedKeywords.includes(keywordNode.keyword._id)) {
-                includeDocument = true;
-                break;
-              }
-            }
-          }
-          if (!includeDocument) {
-            // publication does not qualify -> continue
-            continue;
-          }
-
-          if (filterAuthorsFlag) {
-            includeDocument = false;
-            for (const authorNode of pub.authors) {
-              if (selectedAuthors.includes(authorNode.author._id)) {
-                includeDocument = true;
-                break;
-              }
-            }
-          }
-          if (includeDocument) {
-            filteredPublications.push(pub);
-          }
-        }
-        documents.publications = filteredPublications;
-      }
-
-      if (filterSTACCollectionsFlag) {
-        let filteredSTACCollections = []; 
-        for (const stacColl of documents.stac_collections) {
+    filterSTACCollections(selectedKeywords, selectedEONodes) {
+      // loop over publications and return only documents that match filter criteria 
+      let includeDocument = false;
+      let filteredSTACCollections = []; 
+      for (const stacCol of this.filteredDocuments.stac_collections) {
+        includeDocument = true;
+        // filter keywords
+        if (selectedKeywords.length > 0) {
           includeDocument = false;
-          for (const keywordNode of stacColl.keywords) {
+          for (const keywordNode of stacCol.keywords) {
             if (selectedKeywords.includes(keywordNode.keyword._id)) {
               includeDocument = true;
               break;
             }
           }
-          if (includeDocument) {
-            filteredSTACCollections.push(stacColl);
+        }
+        if (!includeDocument) {
+          // publication does not qualify -> continue
+          continue;
+        }
+
+        // filter eo nodes
+        if (selectedEONodes.length > 0) {
+          includeDocument = false;
+          for (const eoMission of stacCol.eo_missions) {
+            // look for eo missions
+            if (selectedEONodes.includes(eoMission.id)) {
+              includeDocument = true;
+              break;
+            }
+          }
+          if (!includeDocument) {
+            // look for eo instruments
+            for (const eoInstrument of stacCol.eo_instruments) {
+              // look for eo missions
+              if (selectedEONodes.includes(eoInstrument.id)) {
+                includeDocument = true;
+                break;
+              }
+          }
           }
         }
-        documents.stac_collections = filteredSTACCollections
-      }
-      this.filteredDocuments = documents;
 
+        if (includeDocument) {
+          filteredSTACCollections.push(stacCol);
+        }
+      }
+      return filteredSTACCollections;
+    }, 
+
+    filterPublications(selectedKeywords, selectedAuthors, selectedEONodes) {
+      // loop over publications and return only documents that match filter criteria 
+      let includeDocument = false;
+      let filteredPublications = []; 
+      for (const pub of this.filteredDocuments.publications) {
+        includeDocument = true;
+        // filter keywords
+        if (selectedKeywords.length > 0) {
+          includeDocument = false;
+          for (const keywordNode of pub.keywords) {
+            if (selectedKeywords.includes(keywordNode.keyword._id)) {
+              includeDocument = true;
+              break;
+            }
+          }
+        }
+        if (!includeDocument) {
+          // publication does not qualify -> continue
+          continue;
+        }
+
+        // filter authors
+        if (selectedAuthors.length > 0) {
+          includeDocument = false;
+          for (const authorNode of pub.authors) {
+            if (selectedAuthors.includes(authorNode.author._id)) {
+              includeDocument = true;
+              break;
+            }
+          }
+        }
+        if (!includeDocument) {
+          // publication does not qualify -> continue
+          continue;
+        }
+
+        // filter eo nodes
+        if (selectedEONodes.length > 0) {
+          includeDocument = false;
+          for (const eoMission of pub.eo_missions) {
+            // look for eo missions
+            if (selectedEONodes.includes(eoMission.id)) {
+              includeDocument = true;
+              break;
+            }
+          }
+          if (!includeDocument) {
+            // look for eo instruments
+            for (const eoInstrument of pub.eo_instruments) {
+              // look for eo missions
+              if (selectedEONodes.includes(eoInstrument.id)) {
+                includeDocument = true;
+                break;
+              }
+          }
+          }
+        }
+
+        if (includeDocument) {
+          filteredPublications.push(pub);
+        }
+      }
+      return filteredPublications;
+    }, 
+
+    filterDocuments(selectedKeywords, selectedAuthors, selectedEONodes) {
+      // whenever this method is run, the documents get updated based on the current filters that are applied
+      this.filteredDocuments = this.copyRawDocuments();
+      if (!this.$refs.searchHeaderRef) {
+        return;
+      }
+
+      if (selectedKeywords.length == 0 && selectedAuthors.length == 0 && selectedEONodes.length == 0) {
+        // no filters present -> return all documents
+        return;
+      }
+
+      if (selectedKeywords.length > 0) {
+        selectedKeywords = selectedKeywords.map(function(keyword) {
+          return keyword.id;
+        });
+      } else {
+        selectedKeywords = [];
+      }
+      if (selectedAuthors.length > 0) {
+        selectedAuthors = selectedAuthors.map(function(author) {
+          return author.id;
+        });
+      } else {
+        selectedAuthors = [];
+      }
+      if (selectedEONodes.length > 0) {
+        selectedEONodes = selectedEONodes.map(function(eoNode) {
+          return eoNode.id;
+        });
+      } else {
+        selectedEONodes = [];
+      }
+
+      // apply filters
+      this.filteredDocuments.stac_collections = this.filterSTACCollections(selectedKeywords, selectedEONodes);
+      this.filteredDocuments.publications = this.filterPublications(selectedKeywords, selectedAuthors, selectedEONodes);
     }, 
     refreshUIAfterQuery() {
       // hide map and show top results (should be called after a new query was fetched)
@@ -561,11 +631,12 @@ export default {
       this.showAdvancedSearch = true;
     }, 
 
-    async submitGraphQuery(keywords, authors) {
+    async submitGraphQuery(keywords, authors, eoNodes) {
       // graph key
       const request = {
         'keywords': keywords, 
         'authors': authors, 
+        'eo_nodes': eoNodes, 
       }
       const response = await axios.post('/graphQueryRequest', request);
       if (response.status  != 200) {
@@ -581,7 +652,7 @@ export default {
 
       // reset filters after graph query
       this.resetFilters();
-      this.filterDocuments([], []);
+      this.filterDocuments([], [], []);
 
       // TODO what happens with web data ?
     }, 
@@ -684,7 +755,7 @@ export default {
 
         // reset filters
         this.resetFilters();
-        this.filterDocuments([], []);
+        this.filterDocuments([], [], []);
       }
     }, 
     async continueStacItemQuery(stacCollectionID) {
@@ -871,7 +942,7 @@ export default {
 }
 
 #documentBodyExtended {
-    margin-top: 245px;
+    margin-top: 285px;
 }
 
 #appHeader {

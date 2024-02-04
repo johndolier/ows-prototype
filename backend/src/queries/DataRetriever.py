@@ -207,6 +207,20 @@ class DataRetriever:
             author_list = []
         return author_list
     
+    def get_all_eo_nodes(self, batchSize:int = 1000):
+        try:
+            result = self.db.AQLQuery(ALL_EO_NODES_QUERY, batchSize=batchSize, rawResults=True)
+            eo_nodes_list = []
+            for node in result:
+                eo_nodes_list.append({
+                    'id': node['id'], 
+                    'name': node['name']
+                })
+        except Exception as e:
+            print(e)
+            eo_nodes_list = []
+        return eo_nodes_list
+    
     
     def make_publications_query(self, query:str, keywords:list[str] = None, limit:int = 500) -> list[dict]:
         '''
@@ -262,15 +276,19 @@ class DataRetriever:
         
         return filtered_tweets[:limit]
     
-    def make_graph_query(self, keywords_list, authors_list):
-        ''' Makes graph query for publications and stac collections that are connected to the given keywords and authors (in case with publications)
+    def make_graph_query(self, keywords_list, authors_list, eo_list):
+        ''' Makes graph query for publications and stac collections that are connected to the given keywords, EO Missions/instruments and authors (in case with publications)
             additionally makes normal web query with keyword list to get web documents (currently disabled)
         '''
         
         authors = [element['id'] for element in authors_list]
         keywords = [element['id'] for element in keywords_list]
+        eo_nodes = [element['id'] for element in eo_list]
         
-        stac_query_params = {'keyword_list': keywords}
+        stac_query_params = {
+            'keyword_list': keywords, 
+            'eo_list': eo_nodes, 
+        }
         try:
             results = self.db.AQLQuery(GRAPH_KEYWORD_STAC_QUERY, bindVars=stac_query_params, rawResults=True)
             results = [e for e in results]
@@ -281,7 +299,8 @@ class DataRetriever:
         
         pub_query_params = {
             'author_list': authors, 
-            'keyword_list': keywords
+            'keyword_list': keywords, 
+            'eo_list': eo_nodes, 
         }
         try:
             results = self.db.AQLQuery(GRAPH_KEYWORD_PUB_QUERY, bindVars=pub_query_params, rawResults=True)

@@ -49,6 +49,15 @@
           placeholder="Search for authors..."
           class="w-full"
         />
+        <AutoComplete 
+          v-model="selectedEONodes"
+          option-label="name"
+          multiple
+          :suggestions="filteredEONodes"
+          @complete="searchEONodes"
+          placeholder="Search for EO Missions and Instruments..."
+          class="w-full"
+        />
       </div>
       <div class="right-block">
         <PButton
@@ -93,6 +102,7 @@ export default {
     homeViewQuery: String, 
     keywords: Array, 
     authors: Array, 
+    eoNodes: Array, 
   }, 
 
   emits: [
@@ -108,6 +118,8 @@ export default {
       filteredKeywords: null, 
       selectedAuthors: [], 
       filteredAuthors: null, 
+      selectedEONodes: [], 
+      filteredEONodes: null,
     }
   },
 
@@ -134,9 +146,20 @@ export default {
         }
       }, 250);
     }, 
+    searchEONodes(event) {
+      setTimeout(() => {
+        if (!event.query.trim().length) {
+          this.filteredEONodes = [...this.eoNodes];
+        } else {
+          this.filteredEONodes = this.eoNodes.filter((eoNode) => {
+            return eoNode.name.toLowerCase().startsWith(event.query.toLowerCase());
+          });
+        }
+      }, 250);
+    }, 
     graphSearch() {
       // search graph based on selected keywords
-      if (this.selectedKeywords.length == 0 && this.selectedAuthors.length == 0) {
+      if (this.selectedKeywords.length == 0 && this.selectedAuthors.length == 0 && this.selectedEONodes.length == 0) {
         this.$toast.add({
           severity: 'error', 
           summary: 'No Input', 
@@ -146,10 +169,10 @@ export default {
         });
         return;
       }
-      this.$emit('graphQuery', this.selectedKeywords, this.selectedAuthors);
+      this.$emit('graphQuery', this.selectedKeywords, this.selectedAuthors, this.selectedEONodes);
     }, 
     applyFilter() {
-      this.$emit('applyFilter', this.selectedKeywords, this.selectedAuthors);
+      this.$emit('applyFilter', this.selectedKeywords, this.selectedAuthors, this.selectedEONodes);
     }, 
   }, 
   watch: {
@@ -168,6 +191,12 @@ export default {
       deep: true, 
     }, 
     selectedAuthors: {
+      handler() {
+        this.applyFilter();
+      }, 
+      deep: true, 
+    }, 
+    selectedEONodes: {
       handler() {
         this.applyFilter();
       }, 

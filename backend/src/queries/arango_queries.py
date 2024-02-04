@@ -22,6 +22,24 @@ FOR v in Author
     RETURN v
 """
 
+ALL_EO_NODES_QUERY = """
+LET eo_missions = (
+    FOR v in EOMission
+        return {id:v._id, name:v.mission_name_short}
+)
+
+LET eo_instruments = (
+    FOR v in EOInstrument
+        return {id:v._id, name:v.instrument_name_short}
+)
+
+LET eo = UNION_DISTINCT(eo_missions, eo_instruments)
+
+FOR node in eo
+    return {id: node.id, name: node.name}
+
+"""
+
 EO_OBJECTS_FROM_NODE_QUERY = """
 FOR v in OUTBOUND @node_id Mentions
     RETURN v._id
@@ -337,16 +355,26 @@ RETURN {conceptCount: conceptCount, keywordCount: keywordCount}
 '''
 GRAPH_KEYWORD_STAC_QUERY:
     keyword_list: list of keywords to search for
+    eo_list: list of eo missions and instruments to search for
     
-    returns all STACCollections that have a connection to the given keyword
+    returns all STACCollections that have a connection to the given keywords/eo missions
 '''
 GRAPH_KEYWORD_STAC_QUERY = """
-LET stac_collections = (
+LET keyword_stac_collections = (
     FOR keyword_id in @keyword_list
         FOR v in INBOUND  keyword_id HasKeyword
             FILTER v._id LIKE "STACCollection/%"
-            RETURN {stac:v, score:1}
+            RETURN DISTINCT {stac:v, score:1}
 )
+
+LET eo_stac_collections = (
+    FOR eo_id in @eo_list
+        FOR v in INBOUND eo_id Mentions
+            FILTER v._id LIKE "STACCollection/%"
+            RETURN DISTINCT {stac:v, score: 1}
+)
+
+LET stac_collections = UNION_DISTINCT(keyword_stac_collections, eo_stac_collections)
 
 FOR node in stac_collections
     LET conn_eo_objects = (
@@ -369,8 +397,9 @@ FOR node in stac_collections
 GRAPH_KEYWORD_PUB_QUERY:
     keyword_list: list of keywords to search for
     author_list: list of authors to search for
+    eo_list: list of eo missions and instruments to search for
     
-    returns all  Publications that have a connection to the given keyword
+    returns all  Publications that have a connection to the given keywords/authors/eo missions
 '''
 GRAPH_KEYWORD_PUB_QUERY = """
 LET keyword_pubs = (
@@ -387,7 +416,14 @@ LET author_pubs = (
             RETURN {pub:v, score:1}
 )
 
-LET pubs = UNION_DISTINCT(keyword_pubs, author_pubs)
+LET eo_pubs = (
+    FOR eo_id in @eo_list
+        FOR v in INBOUND eo_id Mentions
+            FILTER v._id LIKE "Publication/%"
+            RETURN DISTINCT {pub:v, score: 1}
+)
+
+LET pubs = UNION_DISTINCT(keyword_pubs, author_pubs, eo_pubs)
 
 FOR node in pubs
     LET conn_eo_objects = (

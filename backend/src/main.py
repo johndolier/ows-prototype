@@ -121,9 +121,18 @@ def get_all_authors_request():
     authors = data_retriever.get_all_authors()
     return authors
 
+@app.get("/eoNodeRequest")
+def get_all_eo_nodes_request():
+    eo_nodes = data_retriever.get_all_eo_nodes()
+    return eo_nodes
+
 @app.post("/graphQueryRequest")
 def graph_query_request(request: GraphQueryRequest):
-    results = data_retriever.make_graph_query(keywords_list=request.keywords, authors_list=request.authors)
+    results = data_retriever.make_graph_query(
+        keywords_list=request.keywords, 
+        authors_list=request.authors, 
+        eo_list=request.eo_nodes, 
+    )
     return results
 
 @app.post("/queryAnalyzerRequest")
