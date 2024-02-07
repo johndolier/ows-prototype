@@ -28,8 +28,8 @@
     <div v-if="showAdvancedSearch" class="my-1">
       <div class="left-block">
         <div class="float-left filter-label font-bold m-2">
-          <i class="pi pi-filter mx-1"></i>
-          <label>Filters:</label>
+          <!-- <i class="pi pi-filter mx-1"></i> -->
+          <label>Advanced Search:</label>
         </div>
         <AutoComplete 
           v-model="selectedKeywords"
@@ -60,6 +60,15 @@
         />
       </div>
       <div class="right-block">
+        <PButton
+          @click="applyFilter"
+          severity="info"
+          label="Apply Filter"
+          icon="pi pi-filter"
+          icon-pos="left"
+          size="large"
+          class="mx-2 h-4rem"
+        />
         <PButton
           @click="graphSearch"
           severity="warning"
@@ -179,29 +188,29 @@ export default {
     homeViewQuery(newQuery) {
       this.userQuery = newQuery; 
     }, 
-    selectedKeywords: {
-      handler() {
-        this.userQuery = this.selectedKeywords.map(function(keyword) {
-          return keyword.name;
-        }).join(' ');
+    // selectedKeywords: {
+    //   handler() {
+    //     this.userQuery = this.selectedKeywords.map(function(keyword) {
+    //       return keyword.name;
+    //     }).join(' ');
 
-        // trigger filter
-        this.applyFilter();
-      }, 
-      deep: true, 
-    }, 
-    selectedAuthors: {
-      handler() {
-        this.applyFilter();
-      }, 
-      deep: true, 
-    }, 
-    selectedEONodes: {
-      handler() {
-        this.applyFilter();
-      }, 
-      deep: true, 
-    }
+    //     // trigger filter
+    //     this.applyFilter();
+    //   }, 
+    //   deep: true, 
+    // }, 
+    // selectedAuthors: {
+    //   handler() {
+    //     this.applyFilter();
+    //   }, 
+    //   deep: true, 
+    // }, 
+    // selectedEONodes: {
+    //   handler() {
+    //     this.applyFilter();
+    //   }, 
+    //   deep: true, 
+    // }
   }
 }
 

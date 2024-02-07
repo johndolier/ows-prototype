@@ -650,9 +650,10 @@ export default {
       // TODO set last user query to graph search
       this.lastUserQuery = "Graph Search";
 
-      // reset filters after graph query
-      this.resetFilters();
-      this.filterDocuments([], [], []);
+      
+      // apply changes to documents
+      this.filteredDocuments = this.copyRawDocuments();
+
 
       // TODO what happens with web data ?
     }, 

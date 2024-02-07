@@ -93,7 +93,7 @@ FOR node in pubs_fuzzy
     )
     
     LET authors = (
-        FOR v in OUTBOUND node.pub._id AuthorOf
+        FOR v in INBOUND node.pub._id HasAuthor
             RETURN {author: v}
     )
     
@@ -411,7 +411,7 @@ LET keyword_pubs = (
 
 LET author_pubs = (
     FOR author_id in @author_list
-        FOR v in INBOUND  author_id AuthorOf
+        FOR v in OUTBOUND  author_id HasAuthor
             FILTER v._id LIKE "Publication/%"
             RETURN {pub:v, score:1}
 )
@@ -431,7 +431,7 @@ FOR node in pubs
             RETURN {node: v}
     )
     LET authors = (
-        FOR v in OUTBOUND node.pub._id AuthorOf
+        FOR v in INBOUND node.pub._id HasAuthor
             RETURN {author: v}
     )
     LET keywords = (
