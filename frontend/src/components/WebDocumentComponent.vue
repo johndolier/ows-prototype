@@ -34,17 +34,22 @@
     <template #content>
       <div v-if="hasGeodata">
         <PButton 
-          class="float-right m-2"
+          class="tag-button m-1"
+          label="Web Document"
+          severity="warning"
+        />
+        <PButton 
+          class=" tag-button m-1"
+          :label="location.name"
+          icon="pi pi-compass"
+          severity=""
+        />
+        <PButton 
+          class=" tag-button m-1"
           label="Show On Map"
           icon="pi pi-map"
           severity="success"
           @click="showGeodata"
-        />
-        <PButton 
-          class="float-right m-2"
-          :label="location.name"
-          icon="pi pi-compass"
-          severity=""
         />
       </div>
       <p ref="contentRef"
