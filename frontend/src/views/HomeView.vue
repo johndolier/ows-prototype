@@ -252,9 +252,12 @@ export default {
     }
   }, 
 
-  async created() {
-    // at startup, fetch all keywords, authors and EO objects from database for graph search component
+  async created() {    
+    // (1) set backend url from .env file
+    axios.defaults.baseURL = process.env.VUE_APP_BACKEND_URL;
 
+
+    // (2) fetch all keywords, authors and EO objects from database for graph search component
     const keywordResponse = await axios.get('/keywordRequest');
     if (keywordResponse.status != 200) {
       console.log("error - could not fetch keywords from database");
