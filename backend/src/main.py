@@ -90,67 +90,111 @@ data_retriever = DataRetriever(web_api_key=web_api_key, db_instance=db, graph_na
 
 @app.post("/pubRequest")
 def pub_request(request: PubRequest) -> tuple[str, list[dict]]:
-    results = data_retriever.make_publications_query(
-        query=request.query, 
-        keywords=request.keywords, 
-        #limit=request.limit, 
-    )
+    try:
+        results = data_retriever.make_publications_query(
+            query=request.query, 
+            keywords=request.keywords, 
+            #limit=request.limit, 
+        )
+    except Exception as e:
+        print(e)
+        print(f"error - make_publications_query failed for request: {request}")
+        results = []
+    
     return ('publications', results)
 
 @app.post("/stacCollectionRequest")
 def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[dict]]:
-    results = data_retriever.make_stac_collection_query(
-        query=request.query, 
-        keywords=request.keywords, 
-        #limit=request.limit, 
-    )
+    try:
+        results = data_retriever.make_stac_collection_query(
+            query=request.query, 
+            keywords=request.keywords, 
+            #limit=request.limit, 
+        )
+    except Exception as e:
+        print(e)
+        print(f"error - make_stac_collection_query failed for request: {request}")
+        results = []
+    
     return ('stac_collections', results)
 
 @app.post("/webRequest")
 def web_request(request: WebRequest) -> tuple[str, list[dict]]:
-    results = data_retriever.make_web_query(query=request.query, limit=request.limit, location_filter=request.location_filter, verbose=True)
+    try:
+        results = data_retriever.make_web_query(query=request.query, limit=request.limit, location_filter=request.location_filter, verbose=True)
+    except Exception as e:
+        print(e)
+        print(f"error - make_web_query failed for request: {request}")
+        results = []
+    
     return ('web_documents', results)
 
 @app.get("/keywordRequest")
 def get_all_keywords_request():
-    keywords = data_retriever.get_all_keywords()
+    try:
+        keywords = data_retriever.get_all_keywords()
+    except Exception as e:
+        print(e)
+        print(f"error - get_all_keywords failed")
+        keywords = []
+    
     return keywords
 
 @app.get("/authorRequest")
 def get_all_authors_request():
-    authors = data_retriever.get_all_authors()
+    try:
+        authors = data_retriever.get_all_authors()
+    except Exception as e:
+        print(e)
+        print(f"error - get_all_authors failed")
+        authors = []
+    
     return authors
 
 @app.get("/eoNodeRequest")
 def get_all_eo_nodes_request():
-    eo_nodes = data_retriever.get_all_eo_nodes()
+    try:
+        eo_nodes = data_retriever.get_all_eo_nodes()
+    except Exception as e:
+        print(e)
+        print(f"error - get_all_eo_nodes failed")
+        eo_nodes = []
+    
     return eo_nodes
 
 @app.post("/graphQueryRequest")
 def graph_query_request(request: GraphQueryRequest):
-    results = data_retriever.make_graph_query(
-        keywords_list=request.keywords, 
-        authors_list=request.authors, 
-        eo_list=request.eo_nodes, 
-    )
+    try:
+        results = data_retriever.make_graph_query(
+            keywords_list=request.keywords, 
+            authors_list=request.authors, 
+            eo_list=request.eo_nodes, 
+        )
+    except Exception as e:
+        print(e)
+        print(f"error - make_graph_query failed for request: {request}")
+        results = []
+        
     return results
 
 @app.post("/queryAnalyzerRequest")
 def analyze_user_query(request: QueryAnalyzerRequest) -> dict:
-    ''' Takes the user query and extracts possible locations, time mentions and general keywords '''
-    analyzer_result = qa.analyze_query(user_query=request.query)
-    #print(f"locations: {analyzer_result.get('locations')}")
-    #print(f"dates: {analyzer_result.get('dates')}")
-    #print(f"general keywords: {analyzer_result.get('general_keywords')}")
+    ''' 
+        Takes the user query and extracts possible locations, time mentions and general keywords 
+    '''
+    try:
+        analyzer_result = qa.analyze_query(user_query=request.query)
+    except Exception as e:
+        print(e)
+        print(f"error - make_graph_query failed for request: {request}")
+        # return empty "dummy" result
+        analyzer_result = {
+            'locations': [],
+            'dates': [],
+            'general_keywords': [],
+        }
+        
     return analyzer_result
-
-@app.post("/geoparseRequest")
-def get_location_from_user_query(request: GeoparseRequest) -> tuple[str, list]:
-    ''' Extract locations and bboxes from user query if present '''
-    geocoding_result = qa.get_location_and_geobounds_list(request.query)
-    # TODO transform data for client? 
-
-    return ('locations', geocoding_result)
 
 @app.post("/stacItemRequest", status_code=200)
 def make_stac_item_request(request: STACItemRequest, response: Response) -> tuple[str, list[dict]]:
@@ -160,14 +204,20 @@ def make_stac_item_request(request: STACItemRequest, response: Response) -> tupl
     stac_collection_id = get_stac_collection_from_id(request.collection_id)
     if stac_collection_id is None:
         response.status_code = 400
-        return None
+        return ('stac_items', [])
+
+    try:
+        stac_items = data_retriever.make_stac_item_query(
+            stac_collection_id=stac_collection_id, 
+            location_filter=request.location_filter, 
+            time_interval=request.time_interval, 
+            limit=request.limit, 
+        )
+    except Exception as e:
+        print(e)
+        print(f"error - make_stac_item_query failed for request: {request}")
+        stac_items = []
     
-    stac_items = data_retriever.make_stac_item_query(
-        stac_collection_id=stac_collection_id, 
-        location_filter=request.location_filter, 
-        time_interval=request.time_interval, 
-        limit=request.limit, 
-    )
     return ('stac_items', stac_items)
 
 @app.post("/notebookExportRequest", status_code=200)
@@ -180,11 +230,16 @@ def create_notebook_export(request: NotebookExportRequest, response: Response):
         response.status_code = 400
         return None
     
-    filepath = data_retriever.create_notebook_export(
-        stac_collection_id=stac_collection_id, 
-        location_filter=request.location_filter, 
-        time_interval=request.time_interval, 
-    )
+    try:
+        filepath = data_retriever.create_notebook_export(
+            stac_collection_id=stac_collection_id, 
+            location_filter=request.location_filter, 
+            time_interval=request.time_interval, 
+        )
+    except Exception as e:
+        print(e)
+        print(f"error - create_notebook_export failed for request {request}")
+        filepath = None
     
     if filepath is None:
         print(f"something went wrong.. could not create python notebook for STAC download...")
@@ -195,12 +250,19 @@ def create_notebook_export(request: NotebookExportRequest, response: Response):
 
 @app.post("/geotweetRequest")
 def get_all_geotweets(request: GeotweetRequest):
+    '''
+        Debug / Exploration function to try out visualizing "geotweets" in the frontend application
+    '''
+    try:
+        geotweets = data_retriever.get_geotweets(
+            only_floods=request.only_floods, 
+            limit = request.limit, 
+        )
+    except Exception as e:
+        print(e)
+        print(f"error - get_geotweets failed for request {request}")
+        geotweets = []
     
-    geotweets = data_retriever.get_geotweets(
-        only_floods=request.only_floods, 
-        limit = request.limit, 
-    )
-    print(f"returning {len(geotweets)} geotweets...")
     return geotweets
 
 
