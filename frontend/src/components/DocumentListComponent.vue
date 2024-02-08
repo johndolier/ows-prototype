@@ -7,12 +7,12 @@
       :options="typeOptions" 
       aria-labelledby="basic" 
       :allow-empty="false"
-      class="w-full float-left my-2" 
+      class="w-full my-2" 
     />
     <div v-if="isTopResultsList"
       class="w-full"
     >
-      <h3 class="inline-block">
+      <h3 class="inline-block text-white">
         {{ topResultString }}
       </h3>
       <PButton

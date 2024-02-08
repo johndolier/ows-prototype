@@ -172,7 +172,6 @@
             @click="submitStacItemQuery" 
             icon="pi pi-cloud-download"
             icon-pos="right"
-            size="small" 
             severity="danger"
             :loading="stacItemsLoading"
             class="stac-button" 
@@ -182,7 +181,6 @@
             @click="downloadSTACNotebook" 
             icon="pi pi-download"
             icon-pos="left"
-            size="small" 
             severity="help" 
             class="stac-button" 
           />
@@ -190,7 +188,6 @@
           <div>
             <PButton v-if="normalStyle"
             label="Show Spatial Extent"
-            size="small"
             severity="info"
             icon="pi pi-map"
             icon-pos="right"
@@ -199,7 +196,6 @@
           />
           <PButton v-if="tutorialLink && normalStyle" 
               class="stac-button"
-              size="small"
               label="STAC Notebook Tutorial"
               icon-pos="left"
               icon="pi pi-star"
@@ -559,7 +555,7 @@ export default {
 }
 
 .stac-button {
-  width: 5rem;
+  width: 7rem;
   height: 3rem;
   padding: 0.2rem;
   margin: 0.2rem;
