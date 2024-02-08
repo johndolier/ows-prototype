@@ -26,7 +26,9 @@ These are the default ports:
 - **http://localhost:8080** (Frontend Web server)
 
 
-If for some reason you want to change some of the ports, you can do this in the *docker-compose.yml* file. Please adapt *backend/src/config.yml* as well as the variable **BACKEND_URL** in *frontend/src/main.js* accordingly. 
+If for some reason you want to change the ports, you can do this in the *docker-compose.yml* file. Please adapt *backend/src/config.yml* as well as *frontend/.env* file accordingly. 
+Please make sure that the *VUE_APP_BACKEND_URL* variable in *frontend/.env* points to the correct address and port of the backend (especially when deploying the application on the server). 
+
 
 ### Folder structure
 In order to build the application, you need to move both *config.yml* and the data (*arangodump*) inside the right folders before building the application with Docker. 
@@ -37,7 +39,9 @@ ows-prototype
 |
 |___frontend
 |   |
+|   |___.env
 |   |...
+|
 |
 |___backend
 |   |
