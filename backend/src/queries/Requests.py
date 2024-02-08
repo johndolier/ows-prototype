@@ -24,9 +24,6 @@ class STACItemRequest(BaseModel):
     location_filter: object | None = None
     time_interval: List[object]
 
-class GeoparseRequest(BaseModel):
-    query: str
-    
 class QueryAnalyzerRequest(BaseModel):
     query :str
 
