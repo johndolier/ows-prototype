@@ -103,7 +103,7 @@ class Keyword(GenericOOSNode):
 class HasKeyword(GenericEdge):
     _fields = GenericEdge._fields
 
-class AuthorOf(GenericEdge):
+class HasAuthor(GenericEdge):
     _fields = GenericEdge._fields
 
 class Mentions(GenericEdge):
@@ -136,7 +136,7 @@ class EOGraphCreator(GraphCreatorBase):
     _STAC_SOURCE_CONTAINS_RELATION = STACSourceContains.__name__
     _MENTIONS = Mentions.__name__
     _HAS_KEYWORD_RELATION = HasKeyword.__name__
-    _HAS_AUTHOR_RELATION = AuthorOf.__name__
+    _HAS_AUTHOR_RELATION = HasAuthor.__name__
 
     _edge_definitions = [
         {
@@ -192,10 +192,10 @@ class EOGraphCreator(GraphCreatorBase):
         {
             'relation': _HAS_AUTHOR_RELATION, 
             'from_collections': [
-                _PUBLICATION_NODE, 
+                _AUTHOR_NODE, 
             ], 
             'to_collections': [
-                _AUTHOR_NODE, 
+                _PUBLICATION_NODE
             ]
         }, 
     ]
