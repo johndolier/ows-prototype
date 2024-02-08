@@ -400,7 +400,7 @@ export default {
       return false;
     },
     tutorialLink() {
-      if (this.content.stac_source.name == 'Planetary Computer') {
+      if (this.content.stac_source.name == 'Planetary Computer Data Catalog') {
         return 'https://planetarycomputer.microsoft.com/dataset/' + this.content._key + '#Example-Notebook'
       } else {
         return null;
