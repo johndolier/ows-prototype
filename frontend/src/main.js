@@ -84,14 +84,18 @@ app.directive('tooltip', Tooltip);
 // should be made using credentials (disable if FastAPI backend specified wildcard ('*') in CORS policy)
 // enable if FastAPI backend specified list of URLs in CORS policy
 axios.defaults.withCredentials = false;
+
+// -> NOTE: setting BACKEND URL is now done dynamically in HomeView.vue (by setting variable in 'OWS-PROTOTYPE/frontend/.env')
 // FastAPI backend
-const BACKEND_URL = "http://localhost:5000/"
-axios.defaults.baseURL = BACKEND_URL; 
+// const BACKEND_URL = "http://localhost:5000/"
+// console.log(process.env.VUE_APP_BACKEND_URL);
+// console.log("this is it");
+// axios.defaults.baseURL = process.env.VUE_APP_BACKEND_URL; 
+
 
 // disabled router; if enabled, uncomment these lines
 // import router from './router'
 // app.use(router);
-
 
 // inject utils 
 import HelperClass from './utils';
