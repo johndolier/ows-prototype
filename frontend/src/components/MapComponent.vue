@@ -19,32 +19,29 @@
       class="w-full mx-1 "
       :class="showMap ? 'visible-map' : 'invisible-map'"
     >
-      <div class="w-full my-2">
-        <SplitButton 
-          class="inline-flex mx-2 left-button" 
+      <div class="w-full my-2 flex left-margin">
+        <PButton 
+          class="mx-2 w-2 " 
+          severity="danger" 
+          icon="pi pi-trash" 
+          label="CLEAR MAP" 
+          @click="clearAllLayers"
+        />
+        <SplitButton v-if="!isDrawing"
+          class="inline-flex mx-2 " 
           severity="success" 
           :icon="polygonSelected ? 'pi pi-caret-up' : 'pi pi-stop'" 
           :model="drawItems"
-          size="small"
-          label="SELECT AREA" 
+          label="DRAW FILTER AREA" 
           @click="startDrawing" 
         />
         <PButton 
           v-if="isDrawing" 
-          class="inline-flex left-button" 
+          class="inline-flex mx-2 w-2 " 
           severity="warning" 
-          size="small" 
           icon="pi pi-times"
           label="STOP DRAWING"
           @click="stopDrawing"
-        />
-        <PButton 
-          class="m-2 w-2 right-button" 
-          severity="danger" 
-          size="small" 
-          icon="pi pi-trash" 
-          label="CLEAR MAP" 
-          @click="clearAllLayers"
         />
       </div>
       <div id="mapContainer">
@@ -601,6 +598,10 @@ export default {
 
 .visible-map {
   height: 85vh;
+}
+
+.left-margin {
+  margin-left: 3rem;;
 }
 
 </style>
