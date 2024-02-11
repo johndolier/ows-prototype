@@ -125,8 +125,8 @@ export default {
 
   data () {
     return {
-      typeSelected: 'STAC Collections', 
-      typeOptions: ['Web Documents', 'Publications', 'STAC Collections'], 
+      typeSelected: 'EO Catalogs', 
+      typeOptions: ['Web Documents', 'Publications', 'EO Catalogs'], 
     }
   }, 
 
@@ -150,7 +150,7 @@ export default {
     listDocuments() {
       // parse all document types in single document list and sort by score value
       const documentList = [];
-      if (this.typeSelected == 'STAC Collections') {
+      if (this.typeSelected == 'EO Catalogs') {
         for (const element of this.documents.stac_collections) {
           documentList.push(['stac_collection', element]);
         }
@@ -218,7 +218,7 @@ export default {
         // unknown type was specified
         console.log("warning - unknown type specified in DocumentList: " + this.typeSelected);
         // default typeSelected
-        this.typeSelected = 'STAC Collections'; 
+        this.typeSelected = 'EO Catalogs'; 
       }
     }, 
   }, 
