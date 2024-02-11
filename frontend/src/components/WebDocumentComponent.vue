@@ -36,13 +36,13 @@
         <PButton 
           class="tag-button m-1"
           label="Web Document"
-          severity="warning"
+          severity="secondary"
         />
         <PButton 
           class=" tag-button m-1"
           :label="location.name"
           icon="pi pi-compass"
-          severity=""
+          severity="secondary"
         />
         <PButton 
           class=" tag-button m-1"

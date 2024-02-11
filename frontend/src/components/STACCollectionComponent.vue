@@ -118,7 +118,7 @@
               v-if="spatialExtentCoversGlobe"
               class="tag-button mx-1"
               label="Global"
-              severity="success"
+              severity="secondary"
               v-tooltip="'STAC Collection covers the whole globe'"
               icon="pi pi-globe"
             />
