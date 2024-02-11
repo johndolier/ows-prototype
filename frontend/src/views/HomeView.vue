@@ -160,7 +160,7 @@
               class="topResultListComponent"
               :documents="documents" 
               :stacItems="stacItems" 
-              initial-document-type="STAC Collections"
+              initial-document-type="EO Catalogs"
               :is-top-results-list="true"
               :search-query="lastUserQuery"
               @close-document-list="closeDocumentList"
@@ -619,7 +619,7 @@ export default {
         this.showTopPublicationResults = false;
         return;
       }
-      if (docListType == 'STAC Collections') {
+      if (docListType == 'EO Catalogs') {
         this.showTopSTACResults = false;
         return;
       }
