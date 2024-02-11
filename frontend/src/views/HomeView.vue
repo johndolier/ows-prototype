@@ -881,6 +881,7 @@ export default {
         'query': userQuery, 
         'keywords': keywords, 
         'limit': 10, 
+        'location_filter': this.locationFilter, 
       };
       return axios.post(path, request);
     }, 
