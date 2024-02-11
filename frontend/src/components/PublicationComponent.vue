@@ -86,7 +86,7 @@
           <PButton 
             class="p-1" 
             label="Publication" 
-            severity="warning"
+            severity="secondary"
           />
           <span 
             v-for="keyword in keywords" :key="keyword.id" 

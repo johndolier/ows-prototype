@@ -7,6 +7,7 @@ class STACCollectionRequest(BaseModel):
     query: str
     keywords: list[str]
     limit: PositiveInt
+    location_filter: object | None = None
 
 class WebRequest(BaseModel):
     query: str

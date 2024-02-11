@@ -109,6 +109,7 @@ def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[d
         results = data_retriever.make_stac_collection_query(
             query=request.query, 
             keywords=request.keywords, 
+            location_filter=request.location_filter, 
             #limit=request.limit, 
         )
     except Exception as e:
@@ -121,7 +122,11 @@ def stac_collection_request(request: STACCollectionRequest) -> tuple[str, list[d
 @app.post("/webRequest")
 def web_request(request: WebRequest) -> tuple[str, list[dict]]:
     try:
-        results = data_retriever.make_web_query(query=request.query, limit=request.limit, location_filter=request.location_filter, verbose=True)
+        results = data_retriever.make_web_query(query=request.query, 
+            limit=request.limit, 
+            location_filter=request.location_filter, 
+            verbose=True
+        )
     except Exception as e:
         print(e)
         print(f"error - make_web_query failed for request: {request}")

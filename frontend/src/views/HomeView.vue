@@ -13,8 +13,6 @@
       v-model:visible="showSTACRequestAlert" 
       modal 
       :header="'Request STAC Items for Collection ' + stacCollectionID"
-      class=""
-      contentClass=""
     >
       <div v-if="locationFilter == null">
         <p>
@@ -44,6 +42,8 @@
             v-model="timeRangeFilter" 
             range 
             :partial-range="false" 
+            @open="datepickerOpened"
+            @closed="datepickerClosed"
             class="advanced-search-body"
           />
           <PButton 
@@ -55,6 +55,7 @@
             @click="clearTimeSelection" 
           />
         </div>
+        <div v-if="datepickerIsOpen" class="datepicker-placeholder"></div>
         <div class="advanced-search-element">
           <label for="integeronly" class="font-bold block mb-2">Specify STAC item limit</label>
           <InputNumber 
@@ -227,6 +228,8 @@ export default {
 
       // UI STATE VARIABLES
       showStartScreen: true, 
+      datepickerIsOpen: false, 
+
       // user input
       queryIsLoading: false,
       // advanced search
@@ -381,6 +384,7 @@ export default {
       if (this.$refs.mapRef) {
         this.$refs.mapRef.createWebDocumentLayer();
       }
+      this.focusOnMap();
     }, 
 
     // UI STATE METHODS
@@ -404,6 +408,12 @@ export default {
       return documents;
 
     },
+    datepickerOpened() {
+      this.datepickerIsOpen = true;
+    }, 
+    datepickerClosed() {
+      this.datepickerIsOpen = false;
+    }, 
     
     // graph / filter helper methods
     resetFilters() {
@@ -580,6 +590,7 @@ export default {
     focusOnMap() {
       // sets showMap to true and scrolls to map element
       this.showMap = true;
+      this.fixMap = true;
       if (this.$refs.mapRef == null) {
         return;
       }
@@ -591,6 +602,7 @@ export default {
         this.fixMap = false;
       }
       if (this.showMap) {
+        this.fixMap = true;
         this.$refs.mapRef.createWebDocumentLayer();
       }
     }, 
@@ -881,6 +893,7 @@ export default {
         'query': userQuery, 
         'keywords': keywords, 
         'limit': 10, 
+        'location_filter': this.locationFilter, 
       };
       return axios.post(path, request);
     }, 
@@ -1047,6 +1060,10 @@ export default {
 .right-column {
   display: inline-block;
   width: 45%;
+}
+
+.datepicker-placeholder {
+  height: 20rem !important;
 }
 
 

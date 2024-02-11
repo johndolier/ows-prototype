@@ -142,7 +142,7 @@ class DataRetriever:
         nbf.write(template_notebook, filepath)
         return filepath
         
-    def make_stac_collection_query(self, query:str, keywords:list[str], limit:int = 500) -> list[dict]:
+    def make_stac_collection_query(self, query:str, keywords:list[str], location_filter:dict, limit:int = 500) -> list[dict]:
         ''' 
             Makes query on arangodb to retrieve stac collections that match the query
         '''
@@ -169,6 +169,15 @@ class DataRetriever:
             print(e)
             result = []
         result = [e for e in result]
+        
+        # parse location filter
+        bbox = self.__get_bbox_from_location_filters(location_filter=location_filter)
+        # filter STAC collections by location filter
+        if bbox:
+            result = self.__filter_stac_collections_by_location(result, bbox)
+        else:
+            # no location filter passed -> no spatial filtering applied
+            pass
 
         # add attributes to stac dictionary (score, eo_objects, loading (flag), stac_items (empty list))
         transformed_results = self.__transform_raw_stac_collection_results(result)
@@ -479,6 +488,39 @@ class DataRetriever:
             # TODO handle different shapes
             return None
         
+    def __filter_stac_collections_by_location(self, stac_collection_list, location_filter):
+        print(location_filter)
+        filtered_list = []
+        for stac_collection in stac_collection_list:
+            stac_collection_bbox_list = stac_collection.get('stac', {}).get('extent', {}).get('spatial', {}).get('bbox', {})
+            if not stac_collection_bbox_list:
+                print(f"error - did not find spatial extent for stac collection! {stac_collection.get('stac', {}).get('_id')}")
+            
+            # id = stac_collection.get('stac', {}).get('_id')
+            for bbox in stac_collection_bbox_list:
+                if self.__bbox_overlaps(bbox, location_filter):
+                    filtered_list.append(stac_collection)
+                    break
+
+        return filtered_list
+            
+    def __bbox_overlaps(self, spatial_extent_bbox, location_filter_bbox):
+        ''' Returns true if at least one point of bbox1 is inside bbox2 (intersection OR containment) 
+        '''
+        
+        # spatial extent bbox has format: long/lat long/lat; (W,S,E,N)
+        # location filter bbox has format: lat/long lat/long; (S,W,N,E)
+        bbox1 = [spatial_extent_bbox[1], spatial_extent_bbox[0], spatial_extent_bbox[3], spatial_extent_bbox[2]]
+        bbox2 = [location_filter_bbox[0], location_filter_bbox[1], location_filter_bbox[2], location_filter_bbox[3]]
+        
+        if (bbox1[3] < bbox2[1] or bbox1[1] > bbox2[3] or bbox1[2] < bbox2[0] or bbox1[0] > bbox2[2]):
+            # no intersection
+            return False
+        
+        # bbox1 and bbox2 intersect in some way 
+        return True
+    
+    
     def __get_geojson_from_location_filters(self, location_filter:dict):
         ''' Transforms the location filter geoBounds into a geojson object for querying stac catalogs '''
         # TODO handle multiple different shapes

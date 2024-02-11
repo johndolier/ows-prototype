@@ -35,6 +35,7 @@
           v-model="selectedKeywords"
           option-label="name"
           multiple
+          :force-selection="true"
           :suggestions="filteredKeywords"
           @complete="searchKeywords"
           placeholder="Search for keywords..."
@@ -44,6 +45,7 @@
           v-model="selectedAuthors"
           option-label="name"
           multiple
+          :force-selection="true"
           :suggestions="filteredAuthors"
           @complete="searchAuthors"
           placeholder="Search for authors..."
@@ -53,6 +55,7 @@
           v-model="selectedEONodes"
           option-label="name"
           multiple
+          :force-selection="true"
           :suggestions="filteredEONodes"
           @complete="searchEONodes"
           placeholder="Search for EO Missions and Instruments..."
