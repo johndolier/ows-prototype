@@ -384,6 +384,7 @@ export default {
       if (this.$refs.mapRef) {
         this.$refs.mapRef.createWebDocumentLayer();
       }
+      this.focusOnMap();
     }, 
 
     // UI STATE METHODS
@@ -589,6 +590,7 @@ export default {
     focusOnMap() {
       // sets showMap to true and scrolls to map element
       this.showMap = true;
+      this.fixMap = true;
       if (this.$refs.mapRef == null) {
         return;
       }
