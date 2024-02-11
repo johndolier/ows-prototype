@@ -242,6 +242,7 @@
                     v-if="slotProps.data.img_link" 
                     class="stac-item-img" 
                     :src="slotProps.data.img_link"
+                    v-tooltip="slotProps.data.id"
                     @click="onImageClick(slotProps.data)"
                     @dblclick="showSTACItemsOnMap"
                   />
