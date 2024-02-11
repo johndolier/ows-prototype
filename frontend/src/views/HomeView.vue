@@ -591,6 +591,7 @@ export default {
         this.fixMap = false;
       }
       if (this.showMap) {
+        this.fixMap = true;
         this.$refs.mapRef.createWebDocumentLayer();
       }
     }, 
